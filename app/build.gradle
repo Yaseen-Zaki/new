@@ -1,0 +1,35 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.fondi.photosync'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.fondi.photosync"
+        minSdk 19
+        targetSdk 28
+        versionCode 1
+        versionName "0.1.0"
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    lint {
+        // Fondi Photo Sync is side-loaded onto the Android 4.4 tablet,
+        // not distributed through Google Play. Play's targetSdk minimum
+        // does not apply. targetSdk 28 is a deliberate compatibility
+        // choice pending the Phase 6 platform review.
+        disable 'ExpiredTargetSdkVersion'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+}
