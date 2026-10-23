@@ -1,0 +1,150 @@
+============================================================
+DEEPSEEK REPOSITORY CONTEXT - PART 002
+============================================================
+
+<<<REPOSITORY_FILE_START>>>
+PATH: rep.py
+TYPE: TEXT
+MIME: text/x-python
+SIZE_BYTES: 18480
+<<<FILE_CONTENT_START>>>
+an_size(size: int) -> str:
+
+    units = ["B", "KB", "MB", "GB", "TB"]
+
+    value = float(size)
+
+    for unit in units:
+
+        if value < 1024:
+            return f"{value:.1f} {unit}"
+
+        value /= 1024
+
+    return f"{value:.1f} PB"
+
+
+def read_text(path: Path):
+
+    try:
+
+        data = path.read_bytes()
+
+        # Detect common binary files.
+        if b"\x00" in data:
+            return None
+
+        return data.decode("utf-8")
+
+    except (OSError, UnicodeDecodeError):
+
+        return None
+
+
+# ============================================================
+# COLLECT REPOSITORY
+# ============================================================
+
+def collect_files():
+
+    files = []
+
+    for path in ROOT.rglob("*"):
+
+        if not path.is_file():
+            continue
+
+        if should_ignore(path):
+            continue
+
+        try:
+            size = path.stat().st_size
+        except OSError:
+            continue
+
+        relative = str(
+            path.relative_to(ROOT)
+        )
+
+        # Explicit binary/media.
+        if path.suffix.lower() in BINARY_EXTENSIONS:
+
+            files.append({
+                "path": relative,
+                "type": "BINARY",
+                "mime": get_mime(path),
+                "size": size,
+                "content": None,
+            })
+
+            continue
+
+        content = read_text(path)
+
+        if content is None:
+
+            files.append({
+                "path": relative,
+                "type": "BINARY_OR_UNREADABLE",
+                "mime": get_mime(path),
+                "size": size,
+                "content": None,
+            })
+
+        else:
+
+            files.append({
+                "path": relative,
+                "type": "TEXT",
+                "mime": get_mime(path),
+                "size": size,
+                "content": content,
+            })
+
+    files.sort(
+        key=lambda item: item["path"].lower()
+    )
+
+    return files
+
+
+# ============================================================
+# DIRECTORY TREE
+# ============================================================
+
+def build_tree(files):
+
+    root = {}
+
+    for item in files:
+
+        parts = Path(
+            item["path"]
+        ).parts
+
+        current = root
+
+        for part in parts:
+
+            if part not in current:
+                current[part] = {}
+
+            current = current[part]
+
+    lines = ["."]
+
+    def render(node, prefix=""):
+
+        entries = sorted(node.items())
+
+        for index, (name, children) in enumerate(entries):
+
+            last = index == len(entries) - 1
+
+            lines.append(
+                prefix +
+                ("└── " if last else "├── ") +
+         
+
+<<<FILE_CONTENT_END>>>
+<<<REPOSITORY_FILE_END>>>

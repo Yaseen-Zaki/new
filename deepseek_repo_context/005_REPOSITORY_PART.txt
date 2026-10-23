@@ -1,0 +1,116 @@
+============================================================
+DEEPSEEK REPOSITORY CONTEXT - PART 005
+============================================================
+
+<<<REPOSITORY_FILE_START>>>
+PATH: rep.py
+TYPE: TEXT
+MIME: text/x-python
+SIZE_BYTES: 18480
+<<<FILE_CONTENT_START>>>
+       part_number += 1
+                    header = part_header(
+                        part_number
+                    )
+                    current = header
+
+            # A binary metadata block should always fit.
+            if (
+                len(header) +
+                len(block)
+                > MAX_CHARS
+            ):
+
+                raise RuntimeError(
+                    f"Binary metadata for "
+                    f"{item['path']} is too large."
+                )
+
+            current += block
+
+            continue
+
+        # ====================================================
+        # TEXT FILE
+        # ====================================================
+
+        prefix = text_prefix(item)
+        suffix = text_suffix()
+
+        content = item["content"]
+
+        # ----------------------------------------------------
+        # Empty text file
+        # ----------------------------------------------------
+
+        if content == "":
+
+            complete_block = (
+                prefix +
+                suffix
+            )
+
+            if (
+                len(current) +
+                len(complete_block)
+                > MAX_CHARS
+            ):
+
+                if len(current) > len(header):
+
+                    write_part(
+                        part_number,
+                        current[len(header):]
+                    )
+
+                    part_number += 1
+                    header = part_header(
+                        part_number
+                    )
+                    current = header
+
+            if (
+                len(header) +
+                len(complete_block)
+                > MAX_CHARS
+            ):
+
+                raise RuntimeError(
+                    f"Metadata for empty file "
+                    f"{item['path']} is too large."
+                )
+
+            current += complete_block
+
+            continue
+
+        # ----------------------------------------------------
+        # TEXT FILE CONTENT
+        # ----------------------------------------------------
+
+        position = 0
+
+        while position < len(content):
+
+            # Reserve space for prefix and suffix.
+            available = (
+                MAX_CHARS -
+                len(current) -
+                len(prefix) -
+                len(suffix)
+            )
+
+            # ------------------------------------------------
+            # No room in current part.
+            # ------------------------------------------------
+
+            if available <= 0:
+
+                if len(current) > len(header):
+
+                    write_part(
+                        part_number,
+                        current[len(
+
+<<<FILE_CONTENT_END>>>
+<<<REPOSITORY_FILE_END>>>

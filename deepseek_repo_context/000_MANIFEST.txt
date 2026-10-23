@@ -1,0 +1,15 @@
+DEEPSEEK REPOSITORY MANIFEST
+============================
+
+DIRECTORY TREE
+--------------
+
+.
+├── README.md
+└── rep.py
+
+FILE LIST
+---------
+
+0001 | TEXT                   |      5.0 B | README.md
+0002 | TEXT                   |    18.0 KB | rep.py

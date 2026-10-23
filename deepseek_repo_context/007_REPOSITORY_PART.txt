@@ -1,0 +1,123 @@
+============================================================
+DEEPSEEK REPOSITORY CONTEXT - PART 007
+============================================================
+
+<<<REPOSITORY_FILE_START>>>
+PATH: rep.py
+TYPE: TEXT
+MIME: text/x-python
+SIZE_BYTES: 18480
+<<<FILE_CONTENT_START>>>
+    position += len(piece)
+
+            # ------------------------------------------------
+            # If the file has more content, flush this part.
+            # ------------------------------------------------
+
+            if position < len(content):
+
+                write_part(
+                    part_number,
+                    current[len(header):]
+                )
+
+                part_number += 1
+                header = part_header(
+                    part_number
+                )
+                current = header
+
+    # --------------------------------------------------------
+    # FINAL PART
+    # --------------------------------------------------------
+
+    if len(current) > len(header):
+
+        write_part(
+            part_number,
+            current[len(header):]
+        )
+
+    # --------------------------------------------------------
+    # VERIFY EVERYTHING
+    # --------------------------------------------------------
+
+    print()
+    print("Verifying generated parts...")
+
+    generated = sorted(
+        OUTPUT_DIR.glob(
+            "*_REPOSITORY_PART.txt"
+        )
+    )
+
+    for path in generated:
+
+        actual = len(
+            path.read_text(
+                encoding="utf-8"
+            )
+        )
+
+        if actual > MAX_CHARS:
+
+            raise RuntimeError(
+                f"VERIFICATION FAILED: "
+                f"{path.name} contains "
+                f"{actual:,} characters."
+            )
+
+        print(
+            f"OK: {path.name} -> "
+            f"{actual:,} characters"
+        )
+
+    # --------------------------------------------------------
+    # SUMMARY
+    # --------------------------------------------------------
+
+    text_count = sum(
+        item["type"] == "TEXT"
+        for item in files
+    )
+
+    binary_count = (
+        len(files) -
+        text_count
+    )
+
+    print()
+    print("============================================================")
+    print("EXPORT COMPLETE")
+    print("============================================================")
+    print(
+        f"Total files:        {len(files):,}"
+    )
+    print(
+        f"Text files:         {text_count:,}"
+    )
+    print(
+        f"Binary/media files: {binary_count:,}"
+    )
+    print(
+        f"Repository parts:   {len(generated):,}"
+    )
+    print(
+        f"Hard limit:         {MAX_CHARS:,} characters"
+    )
+    print()
+    print(
+        "Every generated part passed final verification."
+    )
+    print()
+    print(
+        "Send 000_MANIFEST.txt first, then "
+        "001, 002, 003, ... in order."
+    )
+
+
+if __name__ == "__main__":
+    main()
+
+<<<FILE_CONTENT_END>>>
+<<<REPOSITORY_FILE_END>>>
