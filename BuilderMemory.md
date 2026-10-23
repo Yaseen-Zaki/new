@@ -298,26 +298,22 @@ Repository:
 
 `new`
 
-Expected repository path:
+Repository path:
 
 `/workspaces/new`
 
-The latest confirmed diagnostic output reported:
+The latest confirmed environment reports:
 
-- Java: OpenJDK 17.0.20.1.
-- `JAVA_HOME`: `/usr/lib/jvm/java-17-openjdk-amd64`.
+- Java: OpenJDK 17.0.20.1 (`JAVA_HOME`: `/usr/lib/jvm/java-17-openjdk-amd64`).
 - Android SDK location: `/home/codespace/android-sdk`.
 - Android platform: `android-35`.
-- Installed Android Build Tools: `35.0.0`.
-- System Gradle: `9.7.1`.
+- Installed Android Build Tools: **34.0.0 and 35.0.0**.
+- Gradle Wrapper: **8.7** (pinned by `gradle/wrapper/gradle-wrapper.properties`).
+- System Gradle: `9.7.1` — used only for wrapper bootstrap; never for building the project.
 - Git branch: `main`.
-- Git status at the time of the diagnostic: clean.
+- Git status before the Phase 0 commit: only `BuilderMemory.md`, `README.md`, `rep.py`, and `deepseek_repo_context/` were present. No partial Android project files existed, and no cleanup was required.
 
-An attempt to create the Android project terminated with exit code 1.
-
-The exact cause and the state of any partially created files have not been confirmed.
-
-Do not assume the project setup succeeded.
+The earlier setup attempt that terminated with exit code 1 left no visible side effects. The Phase 0 baseline was created from a clean slate.
 
 ## 4.2 Intended toolchain
 
@@ -325,17 +321,17 @@ The intended configuration is:
 
 | Component | Intended version or setting | Status |
 |---|---|---|
-| JDK | 17 | `COMPLETED` — version confirmed |
-| Android SDK platform | 35 | `COMPLETED` — directory confirmed |
-| Android Build Tools 35.0.0 | Installed | `COMPLETED` — directory confirmed |
-| Android Build Tools 34.0.0 | Required by the proposed AGP setup | `NOT STARTED` — installation not verified |
-| Gradle Wrapper | 8.7 | `NOT STARTED` — existence not verified |
-| Android Gradle Plugin | 8.6.1 | `NOT STARTED` |
-| Android Lint | Plugin-provided tasks | `NOT STARTED` |
-| Android project files | Minimal Java project | `NOT STARTED` — creation not verified |
-| Successful debug build | `assembleDebug` | `NOT STARTED` |
-| Successful Lint run | `lintDebug` | `NOT STARTED` |
-| API 19 APK verification | Actual device | `NOT STARTED` |
+| JDK | 17 | `COMPLETED` — 17.0.20.1 confirmed |
+| Android SDK platform | 35 | `COMPLETED` — `android-35` present |
+| Android Build Tools 35.0.0 | Installed | `COMPLETED` — verified present |
+| Android Build Tools 34.0.0 | Installed | `COMPLETED` — **was already present; the previous `NOT STARTED` entry was incorrect** |
+| Gradle Wrapper | 8.7 | `COMPLETED` — `./gradlew --version` reports Gradle 8.7 on JVM 17.0.20.1 |
+| Android Gradle Plugin | 8.6.1 | `COMPLETED` — declared in root `build.gradle`; build succeeds |
+| Android Lint | Plugin-provided tasks | `COMPLETED` — `lintDebug` reports `No issues found.` |
+| Android project files | Minimal Java project | `COMPLETED` — Phase 0 baseline files exist |
+| Successful debug build | `assembleDebug` | `COMPLETED` — APK produced at `app/build/outputs/apk/debug/app-debug.apk`, 9.7 KB |
+| Successful Lint run | `lintDebug` | `COMPLETED` — clean |
+| API 19 APK verification | Actual device | `NOT STARTED` — install on Fondi tablet pending |
 
 These statuses refer to the last known evidence. Update them only after checking the current environment.
 
@@ -345,16 +341,26 @@ Use JDK 17, Gradle 8.7, and Android Gradle Plugin 8.6.1 as the intended initial 
 
 The system Gradle installation is not the version that should build the project. The project should use its checked-in Gradle Wrapper.
 
-The Android app should initially use:
+The Android app uses:
 
 - `compileSdk 35`
 - `minSdk 19`
 - `targetSdk 28` as a provisional starting point, subject to a deliberate compatibility and security review.
-- Java source and target compatibility 17 for compilation.
+- Java source and target compatibility **1.8**.
 
 Important distinction: the Java source compatibility setting does not mean the Android 4.4 runtime supports every Java 17 API. Use Android-compatible APIs and appropriate compatibility libraries where necessary.
 
 A successful compilation does not prove runtime compatibility.
+
+**Correction to earlier guidance:** This memory previously said "Java source and target compatibility 17 for compilation." That was wrong for this project. The **build toolchain** runs on JDK 17; the **app bytecode** targets Java 8. Setting source/target compatibility to 17 would allow language features and APIs that are not available on Android 4.4 at runtime. Core library desugaring (`desugar_jdk_libs`) is **not** enabled in Phase 0. If it is added later, the specific version chosen must be verified compatible with `minSdk 19` — the `2.0.x` line requires `minSdk 21` and cannot be used as-is.
+
+**Additional Phase 0 decisions, recorded so they are not accidentally reversed:**
+
+- **`ExpiredTargetSdkVersion` lint rule is disabled** inside a documented `lint { ... }` block in `app/build.gradle`. This rule enforces Google Play's minimum-`targetSdk` policy. The app is side-loaded onto the Fondi Android 4.4 tablet and is not distributed through Google Play, so the rule does not apply. Disabling it is a deliberate, justified choice — not a workaround for a technical failure.
+- **Launcher icon is a project resource** (`app/src/main/res/drawable/ic_launcher.xml`), **not** a framework reference. `MissingApplicationIcon` is not satisfied by `@android:drawable/*` references. The icon file is a small `<shape>` drawable; it can be replaced with a real image in a later phase without touching `AndroidManifest.xml`.
+- **No `local.properties` file is committed.** `ANDROID_HOME` from the Codespace environment (`/home/codespace/android-sdk`) is sufficient. Committing a `local.properties` with a hard-coded SDK path would break when the workspace path differs.
+- **`.gitignore` excludes** `.gradle/`, `build/`, `app/build/`, `local.properties`, `*.iml`, `.idea/`, `.DS_Store`, `captures/`.
+
 
 Before making final decisions about `targetSdk`, examine the background execution, storage, permissions, and installation requirements of both Android 4.4 and modern Android devices.
 
@@ -390,50 +396,48 @@ The sequence is intentional: establish a reliable build before implementing appl
 - [x] Android SDK platform 35 directory verified.
 - [x] Android Build Tools 35.0.0 directory verified.
 - [x] Repository name confirmed as `new`.
-- [ ] Existing repository files inspected after the interrupted setup.
-- [ ] Current Git status checked again.
-- [ ] Environment setup state reconciled.
+- [x] Existing repository files inspected after the interrupted setup.
+- [x] Current Git status checked again.
+- [x] Environment setup state reconciled — the earlier interrupted setup left no partial Android project files.
 
 ### 0.2 Establish the build toolchain
 
-- [ ] Install or verify Android Build Tools 34.0.0.
-- [ ] Accept required Android SDK licences.
-- [ ] Create and verify Gradle Wrapper 8.7.
-- [ ] Configure Android Gradle Plugin 8.6.1.
-- [ ] Configure the Android SDK paths.
-- [ ] Verify the Gradle Wrapper uses JDK 17.
-- [ ] Verify the Gradle and plugin versions.
-- [ ] Confirm the dependency repositories resolve correctly.
+- [x] Install or verify Android Build Tools 34.0.0 — **already present; no install required.**
+- [x] Accept required Android SDK licences — build completed without licence prompts.
+- [x] Create and verify Gradle Wrapper 8.7.
+- [x] Configure Android Gradle Plugin 8.6.1.
+- [x] Configure the Android SDK paths — `ANDROID_HOME` sufficient; no `local.properties` committed.
+- [x] Verify the Gradle Wrapper uses JDK 17.
+- [x] Verify the Gradle and plugin versions.
+- [x] Confirm the dependency repositories resolve correctly — `google()` and `mavenCentral()` resolved AGP 8.6.1.
 
 ### 0.3 Create the minimal Android project
 
-- [ ] Create or repair `settings.gradle`.
-- [ ] Create or repair root `build.gradle`.
-- [ ] Create or repair `gradle.properties`.
-- [ ] Create the Gradle Wrapper files.
-- [ ] Create `app/build.gradle`.
-- [ ] Create `AndroidManifest.xml`.
-- [ ] Create a basic Java `MainActivity`.
-- [ ] Configure namespace and application ID.
-- [ ] Set `minSdk` to 19.
-- [ ] Set the provisional target SDK.
-- [ ] Confirm the project structure.
+- [x] Create or repair `settings.gradle`.
+- [x] Create or repair root `build.gradle`.
+- [x] Create or repair `gradle.properties`.
+- [x] Create the Gradle Wrapper files.
+- [x] Create `app/build.gradle`.
+- [x] Create `AndroidManifest.xml`.
+- [x] Create a basic Java `MainActivity`.
+- [x] Configure namespace and application ID — `com.fondi.photosync`.
+- [x] Set `minSdk` to 19.
+- [x] Set the provisional target SDK — `targetSdk 28`.
+- [x] Confirm the project structure.
 
 ### 0.4 Verify the build
 
-- [ ] Run `./gradlew --version`.
-- [ ] Run `./gradlew clean`.
-- [ ] Run `./gradlew assembleDebug`.
-- [ ] Run `./gradlew lintDebug`.
-- [ ] Inspect any Lint errors and warnings.
-- [ ] Confirm the APK exists.
-- [ ] Inspect the APK metadata.
-- [ ] Save the successful command output as evidence.
-- [ ] Commit the verified baseline to Git.
+- [x] Run `./gradlew --version`.
+- [x] Run `./gradlew clean`.
+- [x] Run `./gradlew assembleDebug`.
+- [x] Run `./gradlew lintDebug`.
+- [x] Inspect any Lint errors and warnings — resolved to `No issues found.`
+- [x] Confirm the APK exists — `app/build/outputs/apk/debug/app-debug.apk`, 9.7 KB.
+- [x] Inspect the APK metadata — `minSdkVersion:'19'`, `targetSdkVersion:'28'`, `application-label:'Fondi Photo Sync'`, `application-icon-160:'res/drawable/ic_launcher.xml'`, `launchable-activity: com.fondi.photosync.MainActivity`.
+- [x] Save the successful command output as evidence — captured in this session's transcript.
+- [ ] Commit the verified baseline to Git — **pending confirmation. Reply with the `git log --oneline -3` output from Step 5.7, then flip this line to `[x]`.**
 
-**Phase 0 acceptance criteria:** The project builds consistently through the Gradle Wrapper, Lint runs, and a debug APK is generated.
-
-Do not begin major feature implementation before this phase is stable.
+**Phase 0 acceptance criteria (build/lint/APK): MET.** The project builds consistently through the Gradle Wrapper, Lint runs clean, and a debug APK is generated with `minSdk 19` / `targetSdk 28`. Phase 1 may begin once the commit is confirmed.
 
 ---
 
@@ -1014,56 +1018,26 @@ A custom gallery is not required for the initial release.
 
 # PART 9 — CURRENT PROGRESS SUMMARY
 
-**Current overall phase:** Phase 0 — Environment and project initialization.
+**Current overall phase:** Phase 1 — Basic Android Application (Phase 0 build work complete; commit pending confirmation).
 
 **Last confirmed facts:**
 
-- JDK 17 is installed.
-- Android SDK platform 35 is present.
-- Android Build Tools 35.0.0 are present.
-- System Gradle 9.7.1 is installed.
-- The repository is `/workspaces/new`.
-- A setup attempt terminated with exit code 1.
-- The exact state of the partially created files has not yet been confirmed.
+- JDK 17.0.20.1 installed.
+- Android SDK platform 35 present.
+- Build Tools 34.0.0 and 35.0.0 present.
+- Gradle Wrapper pinned at 8.7; `./gradlew --version` reports Gradle 8.7 on JVM 17.0.20.1.
+- Android Gradle Plugin 8.6.1 configured.
+- `./gradlew clean assembleDebug lintDebug` → `BUILD SUCCESSFUL`; lint `No issues found.`
+- APK at `app/build/outputs/apk/debug/app-debug.apk`, 9.7 KB. Metadata: `minSdkVersion 19`, `targetSdkVersion 28`, label `Fondi Photo Sync`, launcher activity `com.fondi.photosync.MainActivity`, launcher icon `res/drawable/ic_launcher.xml`.
+- Repository is `/workspaces/new`, branch `main`.
 
-**No Android feature has been verified as completed.**
+**Verified limitations:**
 
-Do not claim that the project builds or that an APK exists until the evidence confirms it.
+- APK has **not** been installed on the Fondi Android 4.4 tablet yet.
+- The app displays only a static `TextView` placeholder. No folder selection, scanning, queue, network, cloud, or state persistence functionality exists.
+- No cloud infrastructure (Cloudflare Worker, R2 bucket) has been created.
 
-## Immediate next task
-
-Inspect the current Codespace without overwriting files.
-
-Run:
-
-```bash
-cd /workspaces/new
-
-echo "=== CURRENT DIRECTORY ==="
-pwd
-
-echo "=== GIT STATUS ==="
-git status --short --branch
-
-echo "=== PROJECT FILES ==="
-find . -maxdepth 4 -type f \
-  -not -path './.git/*' | sort
-
-echo "=== GRADLE WRAPPER ==="
-ls -l gradlew gradle/wrapper/gradle-wrapper.properties 2>/dev/null || true
-
-echo "=== JAVA ==="
-java -version
-
-echo "=== SDK ==="
-echo "$ANDROID_HOME"
-ls "$ANDROID_HOME/platforms" 2>/dev/null || true
-ls "$ANDROID_HOME/build-tools" 2>/dev/null || true
-```
-
-Use the results to determine the exact next action.
-
-Do not regenerate files that already exist without inspecting them.
+**Immediate next task:** Phase 1 — Main screen layout and state model, staying within API 19 constraints. Framework views only (`LinearLayout`, `TextView`, `Button`, `ProgressBar`, `ScrollView`). No AppCompat, no Material Components, no `ConstraintLayout`, no `minSdk 21+` APIs. Framework theme `@android:style/Theme.Light` remains the base. Verify each layout change with `assembleDebug` and `lintDebug` before moving to the next step.
 
 ---
 
@@ -1093,6 +1067,50 @@ Example:
 **Next step:** Run Lint and verify APK metadata.
 
 Only use this example format when the stated result is actually true.
+
+---
+
+**Component:** Phase 0 — Environment and baseline Android project  
+**Status:** Build and lint `COMPLETED`; commit pending confirmation  
+**Files created:**
+- `.gitignore`
+- `settings.gradle`
+- `build.gradle`
+- `gradle.properties`
+- `app/build.gradle`
+- `app/src/main/AndroidManifest.xml`
+- `app/src/main/java/com/fondi/photosync/MainActivity.java`
+- `app/src/main/res/drawable/ic_launcher.xml`
+- `gradlew`, `gradlew.bat`
+- `gradle/wrapper/gradle-wrapper.jar`
+- `gradle/wrapper/gradle-wrapper.properties`
+
+**Commands executed:**
+- `gradle wrapper --gradle-version 8.7 --distribution-type bin` (system Gradle 9.7.1, used once for bootstrap)
+- `./gradlew --version`
+- `./gradlew clean`
+- `./gradlew assembleDebug`
+- `./gradlew clean assembleDebug lintDebug`
+- `"$ANDROID_HOME/build-tools/35.0.0/aapt2" dump badging app/build/outputs/apk/debug/app-debug.apk`
+
+**Tests performed:** wrapper version check; clean build; debug APK build; Lint on debug variant; APK metadata inspection via `aapt2 dump badging`.
+
+**Actual results:** Gradle 8.7 on JVM 17; `BUILD SUCCESSFUL`; lint `No issues found.`; APK 9.7 KB; `minSdkVersion 19`, `targetSdkVersion 28`.
+
+**Known limitations:**
+- Not installed or run on the Fondi tablet yet.
+- App is a placeholder `TextView`; no functional capability implemented.
+- Launcher icon is a plain `<shape>` drawable to be replaced by a real icon later.
+
+**Corrections issued to this memory during Phase 0:**
+- Java source/target compatibility is `1.8`, not 17 (see §4.3).
+- Build Tools 34.0.0 was already installed; the previous `NOT STARTED` status was incorrect.
+- `ExpiredTargetSdkVersion` lint rule is intentionally disabled with documented justification (see §4.3).
+- Launcher icon must be a project resource, not a framework reference (see §4.3).
+- No `local.properties` is used (see §4.3).
+
+**Next step:** Phase 1 — Main screen layout and state model, API 19 compatible.
+
 
 At the beginning of every new DeepSeek session:
 
