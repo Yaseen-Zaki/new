@@ -1,0 +1,100 @@
+============================================================
+DEEPSEEK REPOSITORY CONTEXT - PART 014
+============================================================
+
+<<<REPOSITORY_FILE_START>>>
+PATH: BuilderMemory.md
+TYPE: TEXT
+MIME: text/markdown
+SIZE_BYTES: 40810
+<<<FILE_CONTENT_START>>>
+d object identity.
+- File size verification.
+- Checksums when practical.
+
+Do not mark an upload complete merely because the request started or the connection remained open.
+
+**Phase 5 acceptance criteria:** A real photo can be uploaded from the Android app, its success is recorded, and failures are handled without corrupting queue state.
+
+---
+
+## PHASE 6 — AUTOMATIC OPERATION AND BACKGROUND RELIABILITY
+
+### 6.1 Background execution
+
+Research and implement an approach compatible with Android 4.4.
+
+Evaluate an appropriate combination of:
+
+- A foreground or background service where suitable.
+- A persistent notification when required by the chosen design.
+- Scheduled scanning.
+- Wake locks only when genuinely necessary.
+- Network availability checks.
+- Persistent queue recovery.
+
+Do not assume that modern Android scheduling APIs are available on API 19.
+
+### 6.2 Locked-screen operation
+
+- [ ] Test scanning with the screen on.
+- [ ] Test scanning with the screen locked.
+- [ ] Test uploads with the screen locked.
+- [ ] Test a temporarily unavailable network.
+- [ ] Test recovery when the network returns.
+- [ ] Test application process termination.
+- [ ] Test device reboot if automatic restart is required.
+
+Android 4.4 and device firmware may impose restrictions. Do not promise perfect reliability without testing the actual tablet.
+
+### 6.3 Resource management
+
+- [ ] Avoid unnecessary polling.
+- [ ] Avoid repeated full-folder scans when incremental scanning is feasible.
+- [ ] Limit concurrent network operations.
+- [ ] Avoid memory-heavy image processing.
+- [ ] Handle low storage.
+- [ ] Handle database errors.
+- [ ] Provide a way to inspect failures.
+
+### 6.4 User settings
+
+Implement settings only after the core workflow works.
+
+Potential settings:
+
+- Scan interval.
+- Maximum concurrent uploads.
+- Retry behavior.
+- Wi-Fi-only uploads.
+- Background operation.
+- Storage warnings.
+- Notifications.
+
+Each setting must have a clear default and predictable behavior.
+
+**Phase 6 acceptance criteria:** The application continues its upload workflow under tested background and locked-screen conditions and recovers from interruptions.
+
+---
+
+## PHASE 7 — SAMSUNG ACCESS AND OPTIONAL GALLERY
+
+### 7.1 Initial access
+
+- [ ] Confirm uploaded objects appear in R2.
+- [ ] Access the objects through the Cloudflare dashboard on the Samsung A15.
+- [ ] Verify that a photo can be downloaded.
+- [ ] Confirm that the Samsung can access photos over a different internet connection.
+
+Do not assume that an R2 bucket is publicly accessible.
+
+### 7.2 Optional gallery
+
+Do not implement this until the essential photo uploader is stable.
+
+If added later:
+
+- [ ] 
+
+<<<FILE_CONTENT_END>>>
+<<<REPOSITORY_FILE_END>>>

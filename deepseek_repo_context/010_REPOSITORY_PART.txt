@@ -1,0 +1,65 @@
+============================================================
+DEEPSEEK REPOSITORY CONTEXT - PART 010
+============================================================
+
+<<<REPOSITORY_FILE_START>>>
+PATH: BuilderMemory.md
+TYPE: TEXT
+MIME: text/markdown
+SIZE_BYTES: 40810
+<<<FILE_CONTENT_START>>>
+application features, then establish secure cloud communication before implementing automatic uploads.
+
+## PHASE 0 — ENVIRONMENT AND PROJECT INITIALIZATION
+
+### 0.1 Inspect the existing Codespace
+
+- [x] JDK 17 version verified.
+- [x] Android SDK platform 35 directory verified.
+- [x] Android Build Tools 35.0.0 directory verified.
+- [x] Repository name confirmed as `new`.
+- [x] Existing repository files inspected after the interrupted setup.
+- [x] Current Git status checked again.
+- [x] Environment setup state reconciled — the earlier interrupted setup left no partial Android project files.
+
+### 0.2 Establish the build toolchain
+
+- [x] Install or verify Android Build Tools 34.0.0 — **already present; no install required.**
+- [x] Accept required Android SDK licences — build completed without licence prompts.
+- [x] Create and verify Gradle Wrapper 8.7.
+- [x] Configure Android Gradle Plugin 8.6.1.
+- [x] Configure the Android SDK paths — `ANDROID_HOME` sufficient; no `local.properties` committed.
+- [x] Verify the Gradle Wrapper uses JDK 17.
+- [x] Verify the Gradle and plugin versions.
+- [x] Confirm the dependency repositories resolve correctly — `google()` and `mavenCentral()` resolved AGP 8.6.1.
+
+### 0.3 Create the minimal Android project
+
+- [x] Create or repair `settings.gradle`.
+- [x] Create or repair root `build.gradle`.
+- [x] Create or repair `gradle.properties`.
+- [x] Create the Gradle Wrapper files.
+- [x] Create `app/build.gradle`.
+- [x] Create `AndroidManifest.xml`.
+- [x] Create a basic Java `MainActivity`.
+- [x] Configure namespace and application ID — `com.fondi.photosync`.
+- [x] Set `minSdk` to 19.
+- [x] Set the provisional target SDK — `targetSdk 28`.
+- [x] Confirm the project structure.
+
+### 0.4 Verify the build
+
+- [x] Run `./gradlew --version`.
+- [x] Run `./gradlew clean`.
+- [x] Run `./gradlew assembleDebug`.
+- [x] Run `./gradlew lintDebug`.
+- [x] Inspect any Lint errors and warnings — resolved to `No issues found.`
+- [x] Confirm the APK exists — `app/build/outputs/apk/debug/app-debug.apk`, 9.7 KB.
+- [x] Inspect the APK metadata — `minSdkVersion:'19'`, `targetSdkVersion:'28'`, `application-label:'Fondi Photo Sync'`, `application-icon-160:'res/drawable/ic_launcher.xml'`, `launchable-activity: com.fondi.photosync.MainActivity`.
+- [x] Save the successful command output as evidence — captured in this session's transcript.
+- [ ] Commit the verified baseline to Git — **pending confirmation. Reply with the `git log --oneline -3` output from Step 5.7, then flip this line to `[x]`.**
+
+**Phase 0 acceptance criteria (build/lint/APK): MET.** The project builds consistently through the Gradle Wrapper, Lint runs clean, a
+
+<<<FILE_CONTENT_END>>>
+<<<REPOSITORY_FILE_END>>>

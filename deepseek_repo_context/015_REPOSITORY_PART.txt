@@ -1,0 +1,98 @@
+============================================================
+DEEPSEEK REPOSITORY CONTEXT - PART 015
+============================================================
+
+<<<REPOSITORY_FILE_START>>>
+PATH: BuilderMemory.md
+TYPE: TEXT
+MIME: text/markdown
+SIZE_BYTES: 40810
+<<<FILE_CONTENT_START>>>
+Design a simple gallery interface.
+- [ ] Add an authorized photo-list endpoint.
+- [ ] Add authorized photo retrieval.
+- [ ] Display thumbnails efficiently.
+- [ ] Handle large collections.
+- [ ] Avoid exposing permanent cloud credentials.
+- [ ] Keep the bucket private.
+- [ ] Restrict access appropriately.
+
+A gallery is optional and must not delay the first functioning uploader.
+
+---
+
+## PHASE 8 — SECURITY, COST, AND MAINTENANCE
+
+### 8.1 Security
+
+- [ ] Keep permanent credentials outside the APK.
+- [ ] Keep secrets out of Git.
+- [ ] Keep the R2 bucket private.
+- [ ] Validate incoming Worker requests.
+- [ ] Restrict upload permissions.
+- [ ] Prevent unintended object overwrites.
+- [ ] Handle expired authorization.
+- [ ] Protect sensitive diagnostic logs.
+- [ ] Review authentication and authorization before deployment.
+
+### 8.2 Storage and costs
+
+- [ ] Estimate storage from actual upload sizes.
+- [ ] Estimate retained storage over time.
+- [ ] Estimate request and bandwidth usage.
+- [ ] Review current service pricing.
+- [ ] Check applicable quotas and restrictions.
+- [ ] Plan how to detect unexpectedly high usage.
+- [ ] Avoid promising unlimited free operation.
+
+Do not delete local originals automatically.
+
+### 8.3 Maintenance and recovery
+
+- [ ] Document how to rebuild the APK.
+- [ ] Document how to deploy the Worker.
+- [ ] Document how to configure the R2 binding.
+- [ ] Document how to update secret values safely.
+- [ ] Document how to diagnose common failures.
+- [ ] Document how to recover an interrupted upload queue.
+- [ ] Keep source changes in Git.
+- [ ] Verify that a clean checkout can reproduce the build.
+
+---
+
+# PART 6 — TESTING CHECKLIST
+
+Do not declare the application complete until the relevant tests have been executed.
+
+## 6.1 Build tests
+
+- [ ] Gradle Wrapper works.
+- [ ] Debug APK builds.
+- [ ] Lint runs.
+- [ ] No unresolved build errors remain.
+- [ ] APK metadata confirms the intended minimum SDK.
+- [ ] A clean checkout can build the application.
+
+## 6.2 Folder tests
+
+- [ ] Folder selection works.
+- [ ] Empty folder is handled.
+- [ ] Existing photos are discovered.
+- [ ] New photos are discovered.
+- [ ] Incomplete files are not uploaded prematurely.
+- [ ] Repeated scans do not duplicate queue entries.
+- [ ] Unavailable folders are handled.
+
+## 6.3 Upload tests
+
+- [ ] One photo uploads successfully.
+- [ ] Several photos upload successfully.
+- [ ] Failed requests are retried appropriately.
+- [ ] Duplicate uploads are prevented.
+- [ ] Identical filenames do not cause unintended overwrites.
+- [ ] Interrupted uploads recover correctly.
+- [ ] Local originals remain intact.
+- [ ] Invalid authorization is reject
+
+<<<FILE_CONTENT_END>>>
+<<<REPOSITORY_FILE_END>>>

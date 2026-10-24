@@ -1,0 +1,77 @@
+============================================================
+DEEPSEEK REPOSITORY CONTEXT - PART 018
+============================================================
+
+<<<REPOSITORY_FILE_START>>>
+PATH: BuilderMemory.md
+TYPE: TEXT
+MIME: text/markdown
+SIZE_BYTES: 40810
+<<<FILE_CONTENT_START>>>
+his example format when the stated result is actually true.
+
+---
+
+**Component:** Phase 0 — Environment and baseline Android project  
+**Status:** Build and lint `COMPLETED`; commit pending confirmation  
+**Files created:**
+- `.gitignore`
+- `settings.gradle`
+- `build.gradle`
+- `gradle.properties`
+- `app/build.gradle`
+- `app/src/main/AndroidManifest.xml`
+- `app/src/main/java/com/fondi/photosync/MainActivity.java`
+- `app/src/main/res/drawable/ic_launcher.xml`
+- `gradlew`, `gradlew.bat`
+- `gradle/wrapper/gradle-wrapper.jar`
+- `gradle/wrapper/gradle-wrapper.properties`
+
+**Commands executed:**
+- `gradle wrapper --gradle-version 8.7 --distribution-type bin` (system Gradle 9.7.1, used once for bootstrap)
+- `./gradlew --version`
+- `./gradlew clean`
+- `./gradlew assembleDebug`
+- `./gradlew clean assembleDebug lintDebug`
+- `"$ANDROID_HOME/build-tools/35.0.0/aapt2" dump badging app/build/outputs/apk/debug/app-debug.apk`
+
+**Tests performed:** wrapper version check; clean build; debug APK build; Lint on debug variant; APK metadata inspection via `aapt2 dump badging`.
+
+**Actual results:** Gradle 8.7 on JVM 17; `BUILD SUCCESSFUL`; lint `No issues found.`; APK 9.7 KB; `minSdkVersion 19`, `targetSdkVersion 28`.
+
+**Known limitations:**
+- Not installed or run on the Fondi tablet yet.
+- App is a placeholder `TextView`; no functional capability implemented.
+- Launcher icon is a plain `<shape>` drawable to be replaced by a real icon later.
+
+**Corrections issued to this memory during Phase 0:**
+- Java source/target compatibility is `1.8`, not 17 (see §4.3).
+- Build Tools 34.0.0 was already installed; the previous `NOT STARTED` status was incorrect.
+- `ExpiredTargetSdkVersion` lint rule is intentionally disabled with documented justification (see §4.3).
+- Launcher icon must be a project resource, not a framework reference (see §4.3).
+- No `local.properties` is used (see §4.3).
+
+**Next step:** Phase 1 — Main screen layout and state model, API 19 compatible.
+
+
+At the beginning of every new DeepSeek session:
+
+1. Read this memory.
+2. Review the progress tracker.
+3. Confirm the current project state.
+4. Identify the next incomplete component.
+5. Work on that component only.
+6. Verify it before updating its status.
+
+At the end of every session:
+
+1. Summarize the changes.
+2. List tests and their actual results.
+3. Identify unresolved errors.
+4. Update the progress tracker.
+5. Provide the complete revised memory document or the exact sections that changed.
+
+**The goal is to build the application step by step, preserve progress across sessions, and never confuse planned functionality with working functionality.**
+
+<<<FILE_CONTENT_END>>>
+<<<REPOSITORY_FILE_END>>>

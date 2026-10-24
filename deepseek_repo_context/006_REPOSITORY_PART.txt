@@ -3,107 +3,83 @@ DEEPSEEK REPOSITORY CONTEXT - PART 006
 ============================================================
 
 <<<REPOSITORY_FILE_START>>>
-PATH: rep.py
+PATH: BuilderMemory.md
 TYPE: TEXT
-MIME: text/x-python
-SIZE_BYTES: 18480
+MIME: text/markdown
+SIZE_BYTES: 40810
 <<<FILE_CONTENT_START>>>
-header):]
-                    )
+tically.
+5. Preserve the original local files.
+6. Avoid uploading the same photo repeatedly.
+7. Retry failed uploads.
+8. Preserve upload progress across application restarts.
+9. Provide Start, Pause, and Stop controls.
+10. Display upload progress and useful status messages.
+11. Report failures in a way that helps diagnose them.
+12. Continue working with the screen locked as reliably as Android 4.4 permits.
+13. Upload photos over HTTPS to the cloud backend.
+14. Allow the Samsung A15 to access the uploaded photos over the internet.
+15. Keep cloud credentials out of the APK.
+16. Minimize unnecessary CPU, memory, network, and battery usage.
+17. Work within a cost-conscious, preferably zero-cost development and operating budget.
 
-                    part_number += 1
-                    header = part_header(
-                        part_number
-                    )
-                    current = header
+The application must not delete local originals after uploading.
 
-                    continue
+## 2.3 Photo volume
 
-                # If we're on a completely empty part,
-                # there must still be enough room for metadata.
-                available = (
-                    MAX_CHARS -
-                    len(current) -
-                    len(prefix) -
-                    len(suffix)
-                )
+Planning assumptions:
 
-                if available <= 0:
+- Average photo size: approximately 0.31 MB.
+- Expected volume: at least 1,000 photos per day.
+- Approximate new storage per day: 310 MB.
+- Approximate new storage per 30 days: 9.3 GB.
+- Approximate new storage per year: 113 GB.
 
-                    raise RuntimeError(
-                        f"File metadata for "
-                        f"{item['path']} is too large "
-                        f"for a {MAX_CHARS}-character part."
-                    )
+These are estimates, not guarantees. Actual sizes and storage requirements may differ.
 
-            # ------------------------------------------------
-            # Take exactly as many original characters as fit.
-            # ------------------------------------------------
+Cloud storage grows continuously if all photos are retained.
 
-            take = min(
-                available,
-                len(content) - position
-            )
+Design the system so that the upload process can scale to this volume, but do not assume that unlimited storage or bandwidth will remain free.
 
-            piece = content[
-                position:
-                position + take
-            ]
+Check current Cloudflare limits, allowances, and pricing before deploying a high-volume service.
 
-            block = (
-                prefix +
-                piece +
-                (
-                    ""
-                    if piece.endswith("\n")
-                    else "\n"
-                ) +
-                suffix
-            )
+---
 
-            # ------------------------------------------------
-            # If the block doesn't fit, reduce the content
-            # until it does. This check uses the ACTUAL final
-            # string.
-            # ------------------------------------------------
+# PART 3 — SYSTEM ARCHITECTURE
 
-            while (
-                len(current) +
-                len(block)
-                > MAX_CHARS
-            ):
+Use the following architecture unless a specific technical issue requires a change.
 
-                # Reduce by one character at a time only when
-                # the initial calculation is unexpectedly off.
-                take -= 1
-
-                if take <= 0:
-
-                    raise RuntimeError(
-                        f"Could not fit file "
-                        f"{item['path']} into "
-                        f"{MAX_CHARS}-character parts."
-                    )
-
-                piece = content[
-                    position:
-                    position + take
-                ]
-
-                block = (
-                    prefix +
-                    piece +
-                    (
-                        ""
-                        if piece.endswith("\n")
-                        else "\n"
-                    ) +
-                    suffix
-                )
-
-            current += block
-
-        
+    FONDI TABLET — ANDROID 4.4
+    ┌───────────────────────────────┐
+    │ Photo folder                  │
+    │       ↓                       │
+    │ Folder scanner                │
+    │       ↓                       │
+    │ Duplicate detection           │
+    │       ↓                       │
+    │ Local upload queue/database   │
+    │       ↓                       │
+    │ Upload manager and retries    │
+    └───────────────┬───────────────┘
+                    │
+                    │ HTTPS
+                    ▼
+    ┌───────────────────────────────┐
+    │ CLOUDFLARE WORKER             │
+    │                               │
+    │ Authentication/authorization │
+    │ Upload authorization          │
+    │ Request validation            │
+    │ Optional photo-list API       │
+    └───────────────┬───────────────┘
+                    │
+                    ▼
+    ┌───────────────────────────────┐
+    │ CLOUDFLARE R2                 │
+    │                               │
+    │ Private object storage        │
+    │ Original uploaded photos      │
+    └──────────
 
 <<<FILE_CONTENT_END>>>
 <<<REPOSITORY_FILE_END>>>

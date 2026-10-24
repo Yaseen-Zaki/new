@@ -3,132 +3,86 @@ DEEPSEEK REPOSITORY CONTEXT - PART 004
 ============================================================
 
 <<<REPOSITORY_FILE_START>>>
-PATH: rep.py
+PATH: BuilderMemory.md
 TYPE: TEXT
-MIME: text/x-python
-SIZE_BYTES: 18480
+MIME: text/markdown
+SIZE_BYTES: 40810
 <<<FILE_CONTENT_START>>>
-    OUTPUT_DIR /
-        f"{part_number:03d}_REPOSITORY_PART.txt"
-    )
+vironment preparation in progress  
+**Developer:** Beginner working with AI-assisted coding  
+**IDE:** GitHub Codespaces  
+**Repository:** `new`  
+**Target device:** Fondi tablet running Android 4.4 (API 19)  
+**Secondary device:** Samsung Galaxy A15  
+**Cloud provider:** Cloudflare Workers and Cloudflare R2  
+**Primary language:** Java for Android; JavaScript for Cloudflare Worker  
+**Main objective:** Build a reliable photo-sync Android application for the old tablet.
 
-    path.write_text(
-        final_text,
-        encoding="utf-8"
-    )
+---
 
-    print(
-        f"Created {path.name}: "
-        f"{actual_length:,} characters"
-    )
+# PART 1 — RULES FOR THE AI BUILDER
 
+You are my technical guide and coding assistant for this project.
 
-# ============================================================
-# APPEND TEXT TO CURRENT PART
-# ============================================================
+I am a beginner in Java, Android development, APIs, networking, and cloud development. I know basic Python and have some experience with C.
 
-def current_header_size(part_number):
+Follow these rules throughout the project.
 
-    return len(
-        part_header(part_number)
-    )
+## 1.1 Work incrementally
 
+- Implement one small, clearly defined component at a time.
+- Explain what the component does and why it is necessary.
+- Give me the exact commands to execute in GitHub Codespaces.
+- Identify exactly which files must be created or modified.
+- Provide complete file contents when replacing a file is appropriate.
+- Explain how to verify the result.
+- Wait for me to report the result before treating the component as complete.
+- Maintain this document's progress tracker after each successful milestone.
 
-# ============================================================
-# MAIN EXPORT
-# ============================================================
+Do not generate the entire application in one enormous response.
 
-def main():
+## 1.2 Protect existing work
 
-    print()
-    print("Scanning repository...")
-    print()
+The GitHub repository is named `new`.
 
-    OUTPUT_DIR.mkdir(
-        exist_ok=True
-    )
+The expected workspace path is:
 
-    # --------------------------------------------------------
-    # COLLECT FILES
-    # --------------------------------------------------------
+`/workspaces/new`
 
-    files = collect_files()
+Before changing files:
 
-    print(
-        f"Found {len(files):,} relevant files."
-    )
+1. Confirm the current working directory.
+2. Inspect the existing project files.
+3. Check Git status.
+4. Identify the files that need to change.
+5. Avoid overwriting existing work unnecessarily.
 
-    # --------------------------------------------------------
-    # MANIFEST
-    # --------------------------------------------------------
+Never assume a command completed just because it was started.
 
-    tree = build_tree(files)
+If a terminal process terminates unexpectedly, diagnose the current state and resume from the last successful step. Do not blindly repeat an entire setup script.
 
-    manifest = create_manifest(
-        files,
-        tree
-    )
+## 1.3 Maintain accurate progress
 
-    manifest_path = (
-        OUTPUT_DIR /
-        "000_MANIFEST.txt"
-    )
+Every checklist item must have exactly one of these statuses:
 
-    manifest_path.write_text(
-        manifest,
-        encoding="utf-8"
-    )
+- `NOT STARTED`
+- `IN PROGRESS`
+- `BLOCKED`
+- `COMPLETED`
 
-    print(
-        f"Created 000_MANIFEST.txt: "
-        f"{len(manifest):,} characters"
-    )
+A component can be marked `COMPLETED` only when its defined acceptance criteria have been satisfied.
 
-    # --------------------------------------------------------
-    # PART STATE
-    # --------------------------------------------------------
+Examples:
 
-    part_number = 1
+- Installing Java does not mean the Android project is complete.
+- Creating a Worker does not mean the cloud connection works.
+- Compiling an APK does not prove that it runs on Android 4.4.
+- A successful upload does not prove that duplicate prevention or retries work.
+- A feature that has not been tested must not be described as tested.
 
-    header = part_header(
-        part_number
-    )
+When updating the tracker, preserve all existing statuses unless new evidence justifies changing them.
 
-    current = header
-
-    # --------------------------------------------------------
-    # PROCESS FILES
-    # --------------------------------------------------------
-
-    for item in files:
-
-        # ====================================================
-        # BINARY FILE
-        # ====================================================
-
-        if item["type"] != "TEXT":
-
-            block = binary_representation(
-                item
-            )
-
-            # If it doesn't fit in the current part,
-            # write the current part first.
-            if (
-                len(current) +
-                len(block)
-                > MAX_CHARS
-            ):
-
-                # Only write if it contains something
-                # besides the header.
-                if len(current) > len(header):
-                    write_part(
-                        part_number,
-                        current[len(header):]
-                    )
-
-             
+Never reset c
 
 <<<FILE_CONTENT_END>>>
 <<<REPOSITORY_FILE_END>>>

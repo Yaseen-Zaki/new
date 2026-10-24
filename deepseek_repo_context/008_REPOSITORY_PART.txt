@@ -1,0 +1,60 @@
+============================================================
+DEEPSEEK REPOSITORY CONTEXT - PART 008
+============================================================
+
+<<<REPOSITORY_FILE_START>>>
+PATH: BuilderMemory.md
+TYPE: TEXT
+MIME: text/markdown
+SIZE_BYTES: 40810
+<<<FILE_CONTENT_START>>>
+).
+- Android SDK location: `/home/codespace/android-sdk`.
+- Android platform: `android-35`.
+- Installed Android Build Tools: **34.0.0 and 35.0.0**.
+- Gradle Wrapper: **8.7** (pinned by `gradle/wrapper/gradle-wrapper.properties`).
+- System Gradle: `9.7.1` — used only for wrapper bootstrap; never for building the project.
+- Git branch: `main`.
+- Git status before the Phase 0 commit: only `BuilderMemory.md`, `README.md`, `rep.py`, and `deepseek_repo_context/` were present. No partial Android project files existed, and no cleanup was required.
+
+The earlier setup attempt that terminated with exit code 1 left no visible side effects. The Phase 0 baseline was created from a clean slate.
+
+## 4.2 Intended toolchain
+
+The intended configuration is:
+
+| Component | Intended version or setting | Status |
+|---|---|---|
+| JDK | 17 | `COMPLETED` — 17.0.20.1 confirmed |
+| Android SDK platform | 35 | `COMPLETED` — `android-35` present |
+| Android Build Tools 35.0.0 | Installed | `COMPLETED` — verified present |
+| Android Build Tools 34.0.0 | Installed | `COMPLETED` — **was already present; the previous `NOT STARTED` entry was incorrect** |
+| Gradle Wrapper | 8.7 | `COMPLETED` — `./gradlew --version` reports Gradle 8.7 on JVM 17.0.20.1 |
+| Android Gradle Plugin | 8.6.1 | `COMPLETED` — declared in root `build.gradle`; build succeeds |
+| Android Lint | Plugin-provided tasks | `COMPLETED` — `lintDebug` reports `No issues found.` |
+| Android project files | Minimal Java project | `COMPLETED` — Phase 0 baseline files exist |
+| Successful debug build | `assembleDebug` | `COMPLETED` — APK produced at `app/build/outputs/apk/debug/app-debug.apk`, 9.7 KB |
+| Successful Lint run | `lintDebug` | `COMPLETED` — clean |
+| API 19 APK verification | Actual device | `NOT STARTED` — install on Fondi tablet pending |
+
+These statuses refer to the last known evidence. Update them only after checking the current environment.
+
+## 4.3 Compatibility requirements
+
+Use JDK 17, Gradle 8.7, and Android Gradle Plugin 8.6.1 as the intended initial combination.
+
+The system Gradle installation is not the version that should build the project. The project should use its checked-in Gradle Wrapper.
+
+The Android app uses:
+
+- `compileSdk 35`
+- `minSdk 19`
+- `targetSdk 28` as a provisional starting point, subject to a deliberate compatibility and security review.
+- Java source and target compatibility **1.8**.
+
+Important distinction: the Java source compatibility setting does not mean the Android 4.4 runtime supports every Java 17 API. Use Android-compatible APIs and appropriate compatibility libraries where necessary.
+
+A successful compilation does not prove runtime compat
+
+<<<FILE_CONTENT_END>>>
+<<<REPOSITORY_FILE_END>>>

@@ -1,0 +1,115 @@
+============================================================
+DEEPSEEK REPOSITORY CONTEXT - PART 025
+============================================================
+
+<<<REPOSITORY_FILE_START>>>
+PATH: BuilderMemory.md.bak
+TYPE: TEXT
+MIME: application/x-trash
+SIZE_BYTES: 35531
+<<<FILE_CONTENT_START>>>
+1 Main screen
+
+Create a lightweight interface with:
+
+- Application title.
+- Folder selection control.
+- Start button.
+- Pause button.
+- Stop button.
+- Current status.
+- Number of pending photos.
+- Number of successful uploads.
+- Number of failed uploads.
+- Current upload progress.
+- Last error information.
+
+### 1.2 Application state
+
+Define clear states, such as:
+
+- Stopped.
+- Scanning.
+- Uploading.
+- Paused.
+- Waiting for network.
+- Retrying.
+- Error.
+
+Avoid contradictory states and ensure that controls behave consistently.
+
+### 1.3 Basic controls
+
+Implement and test:
+
+- Start begins the selected workflow.
+- Pause prevents new uploads and safely handles any active upload.
+- Stop stops scheduling new work and shuts down active work according to a defined policy.
+- Restarting the application restores appropriate saved state.
+
+**Phase 1 acceptance criteria:** The app opens on Android, displays its interface, and its controls work without cloud connectivity.
+
+---
+
+## PHASE 2 — PHOTO FOLDER SELECTION AND SCANNING
+
+### 2.1 Folder selection
+
+- [ ] Determine which folder-selection mechanism works on API 19.
+- [ ] Allow the user to choose a folder.
+- [ ] Save the selected folder reference or path appropriately.
+- [ ] Handle permissions and unavailable folders.
+- [ ] Explain how to reselect a folder if access is lost.
+
+### 2.2 Photo discovery
+
+- [ ] Scan the selected folder.
+- [ ] Identify supported image files.
+- [ ] Ignore directories and unsupported files.
+- [ ] Avoid processing incomplete files that are still being written.
+- [ ] Avoid rescanning excessively.
+- [ ] Handle inaccessible files.
+- [ ] Handle large folders without exhausting memory.
+
+### 2.3 Scan scheduling
+
+- [ ] Configure the scan interval.
+- [ ] Avoid overlapping scans.
+- [ ] Handle application pauses and restarts.
+- [ ] Record useful scanning errors.
+- [ ] Ensure repeated scans do not create duplicate queue entries.
+
+**Phase 2 acceptance criteria:** The app can select a folder, find existing photos, and discover new photos without uploading anything yet.
+
+---
+
+## PHASE 3 — LOCAL DATABASE AND UPLOAD QUEUE
+
+### 3.1 Local persistence
+
+Choose an appropriate local storage mechanism after evaluating API 19 compatibility and project complexity.
+
+SQLite is a suitable starting option.
+
+Store only the information required to manage uploads.
+
+Potential fields include:
+
+- Local file path or stable file reference.
+- Filename.
+- File size.
+- Modification timestamp.
+- Optional content hash.
+- Remote object key.
+- Upload status.
+- Attempt count.
+- Last attempt time.
+- Last error.
+- Creation or discovery time.
+
+### 3.2 Queue management
+
+Implement queue states s
+
+<<<FILE_CONTENT_END>>>
+<<<REPOSITORY_FILE_END>>>

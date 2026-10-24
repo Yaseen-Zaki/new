@@ -1,0 +1,152 @@
+============================================================
+DEEPSEEK REPOSITORY CONTEXT - PART 037
+============================================================
+
+<<<REPOSITORY_FILE_START>>>
+PATH: README.md
+TYPE: TEXT
+MIME: text/markdown
+SIZE_BYTES: 5
+<<<FILE_CONTENT_START>>>
+w
+
+<<<FILE_CONTENT_END>>>
+<<<REPOSITORY_FILE_END>>>
+<<<REPOSITORY_FILE_START>>>
+PATH: rep.py
+TYPE: TEXT
+MIME: text/x-python
+SIZE_BYTES: 18480
+<<<FILE_CONTENT_START>>>
+#!/usr/bin/env python3
+
+from pathlib import Path
+import mimetypes
+
+
+# ============================================================
+# CONFIGURATION
+# ============================================================
+
+ROOT = Path(".").resolve()
+
+# ABSOLUTE LIMIT FOR EACH GENERATED PART
+MAX_CHARS = 3000
+
+OUTPUT_DIR = ROOT / "deepseek_repo_context"
+
+
+# ============================================================
+# DIRECTORIES TO IGNORE
+# ============================================================
+
+IGNORED_DIRECTORIES = {
+    ".git",
+    "node_modules",
+    ".venv",
+    "venv",
+    "env",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".tox",
+    ".nox",
+    ".cache",
+    "coverage",
+    "dist",
+    "build",
+    ".next",
+    ".nuxt",
+    ".parcel-cache",
+    ".turbo",
+    "target",
+    "vendor",
+}
+
+
+# ============================================================
+# FILES TO IGNORE
+# ============================================================
+
+IGNORED_FILES = {
+    ".DS_Store",
+    "Thumbs.db",
+}
+
+
+# ============================================================
+# BINARY / MEDIA EXTENSIONS
+# ============================================================
+
+BINARY_EXTENSIONS = {
+    # Images
+    ".png", ".jpg", ".jpeg", ".gif", ".webp",
+    ".bmp", ".ico", ".tif", ".tiff", ".avif",
+
+    # Video
+    ".mp4", ".mkv", ".avi", ".mov", ".webm",
+    ".flv", ".wmv", ".m4v",
+
+    # Audio
+    ".mp3", ".wav", ".ogg", ".flac",
+    ".aac", ".m4a",
+
+    # Archives
+    ".zip", ".rar", ".7z", ".tar",
+    ".gz", ".bz2", ".xz",
+
+    # Binary / compiled
+    ".exe", ".dll", ".so", ".dylib",
+    ".bin", ".o", ".a", ".class",
+    ".pyc", ".pyo",
+
+    # Databases
+    ".db", ".sqlite", ".sqlite3",
+
+    # Fonts
+    ".ttf", ".otf", ".woff", ".woff2",
+}
+
+
+# ============================================================
+# HELPERS
+# ============================================================
+
+def should_ignore(path: Path) -> bool:
+
+    try:
+        relative = path.relative_to(ROOT)
+    except ValueError:
+        return True
+
+    if any(
+        part in IGNORED_DIRECTORIES
+        for part in relative.parts
+    ):
+        return True
+
+    if path.name in IGNORED_FILES:
+        return True
+
+    # Never scan our own generated directory.
+    try:
+        path.relative_to(OUTPUT_DIR)
+        return True
+    except ValueError:
+        pass
+
+    return False
+
+
+def get_mime(path: Path) -> str:
+
+    mime, _ = mimetypes.guess_type(path.name)
+
+    return mime or "unknown"
+
+
+def human_s
+
+<<<FILE_CONTENT_END>>>
+<<<REPOSITORY_FILE_END>>>

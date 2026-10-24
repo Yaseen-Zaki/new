@@ -5,11 +5,108 @@ DIRECTORY TREE
 --------------
 
 .
+├── .gitignore
+├── .gradle
+│   ├── 8.7
+│   │   ├── checksums
+│   │   │   ├── checksums.lock
+│   │   │   ├── md5-checksums.bin
+│   │   │   └── sha1-checksums.bin
+│   │   ├── dependencies-accessors
+│   │   │   └── gc.properties
+│   │   ├── executionHistory
+│   │   │   ├── executionHistory.bin
+│   │   │   └── executionHistory.lock
+│   │   ├── fileChanges
+│   │   │   └── last-build.bin
+│   │   ├── fileHashes
+│   │   │   ├── fileHashes.bin
+│   │   │   ├── fileHashes.lock
+│   │   │   └── resourceHashesCache.bin
+│   │   └── gc.properties
+│   ├── 9.7.1
+│   │   ├── checksums
+│   │   │   └── checksums.lock
+│   │   ├── executionHistory
+│   │   │   ├── executionHistory.bin
+│   │   │   └── executionHistory.lock
+│   │   ├── fileChanges
+│   │   │   └── last-build.bin
+│   │   ├── fileHashes
+│   │   │   ├── fileHashes.bin
+│   │   │   └── fileHashes.lock
+│   │   └── gc.properties
+│   ├── buildOutputCleanup
+│   │   ├── buildOutputCleanup.lock
+│   │   ├── cache.properties
+│   │   └── outputFiles.bin
+│   └── vcs-1
+│       └── gc.properties
+├── BuilderMemory.md
+├── BuilderMemory.md.bak
 ├── README.md
-└── rep.py
+├── app
+│   ├── build.gradle
+│   └── src
+│       └── main
+│           ├── AndroidManifest.xml
+│           ├── java
+│           │   └── com
+│           │       └── fondi
+│           │           └── photosync
+│           │               └── MainActivity.java
+│           └── res
+│               └── drawable
+│                   └── ic_launcher.xml
+├── build.gradle
+├── gradle
+│   └── wrapper
+│       ├── gradle-wrapper.jar
+│       └── gradle-wrapper.properties
+├── gradle.properties
+├── gradlew
+├── gradlew.bat
+├── rep.py
+└── settings.gradle
 
 FILE LIST
 ---------
 
-0001 | TEXT                   |      5.0 B | README.md
-0002 | TEXT                   |    18.0 KB | rep.py
+0001 | TEXT                   |     77.0 B | .gitignore
+0002 | BINARY_OR_UNREADABLE   |     17.0 B | .gradle/8.7/checksums/checksums.lock
+0003 | BINARY                 |    28.1 KB | .gradle/8.7/checksums/md5-checksums.bin
+0004 | BINARY                 |    42.1 KB | .gradle/8.7/checksums/sha1-checksums.bin
+0005 | TEXT                   |      0.0 B | .gradle/8.7/dependencies-accessors/gc.properties
+0006 | BINARY                 |   368.0 KB | .gradle/8.7/executionHistory/executionHistory.bin
+0007 | BINARY_OR_UNREADABLE   |     17.0 B | .gradle/8.7/executionHistory/executionHistory.lock
+0008 | BINARY                 |      1.0 B | .gradle/8.7/fileChanges/last-build.bin
+0009 | BINARY                 |    21.9 KB | .gradle/8.7/fileHashes/fileHashes.bin
+0010 | BINARY_OR_UNREADABLE   |     17.0 B | .gradle/8.7/fileHashes/fileHashes.lock
+0011 | BINARY                 |    18.5 KB | .gradle/8.7/fileHashes/resourceHashesCache.bin
+0012 | TEXT                   |      0.0 B | .gradle/8.7/gc.properties
+0013 | BINARY_OR_UNREADABLE   |     17.0 B | .gradle/9.7.1/checksums/checksums.lock
+0014 | BINARY                 |    19.1 KB | .gradle/9.7.1/executionHistory/executionHistory.bin
+0015 | BINARY_OR_UNREADABLE   |     17.0 B | .gradle/9.7.1/executionHistory/executionHistory.lock
+0016 | BINARY                 |      1.0 B | .gradle/9.7.1/fileChanges/last-build.bin
+0017 | BINARY                 |    18.3 KB | .gradle/9.7.1/fileHashes/fileHashes.bin
+0018 | BINARY_OR_UNREADABLE   |     17.0 B | .gradle/9.7.1/fileHashes/fileHashes.lock
+0019 | TEXT                   |      0.0 B | .gradle/9.7.1/gc.properties
+0020 | BINARY_OR_UNREADABLE   |     17.0 B | .gradle/buildOutputCleanup/buildOutputCleanup.lock
+0021 | TEXT                   |     49.0 B | .gradle/buildOutputCleanup/cache.properties
+0022 | BINARY                 |    21.9 KB | .gradle/buildOutputCleanup/outputFiles.bin
+0023 | TEXT                   |      0.0 B | .gradle/vcs-1/gc.properties
+0024 | TEXT                   |    818.0 B | app/build.gradle
+0025 | TEXT                   |    915.0 B | app/src/main/AndroidManifest.xml
+0026 | TEXT                   |    524.0 B | app/src/main/java/com/fondi/photosync/MainActivity.java
+0027 | TEXT                   |    223.0 B | app/src/main/res/drawable/ic_launcher.xml
+0028 | TEXT                   |     73.0 B | build.gradle
+0029 | TEXT                   |    39.9 KB | BuilderMemory.md
+0030 | TEXT                   |    34.7 KB | BuilderMemory.md.bak
+0031 | TEXT                   |    150.0 B | gradle.properties
+0032 | BINARY_OR_UNREADABLE   |    46.4 KB | gradle/wrapper/gradle-wrapper.jar
+0033 | TEXT                   |    279.0 B | gradle/wrapper/gradle-wrapper.properties
+0034 | TEXT                   |     8.5 KB | gradlew
+0035 | TEXT                   |     2.8 KB | gradlew.bat
+0036 | TEXT                   |      5.0 B | README.md
+0037 | TEXT                   |    18.0 KB | rep.py
+0038 | TEXT                   |    334.0 B | settings.gradle

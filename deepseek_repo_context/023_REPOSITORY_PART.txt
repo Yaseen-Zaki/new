@@ -1,0 +1,82 @@
+============================================================
+DEEPSEEK REPOSITORY CONTEXT - PART 023
+============================================================
+
+<<<REPOSITORY_FILE_START>>>
+PATH: BuilderMemory.md.bak
+TYPE: TEXT
+MIME: application/x-trash
+SIZE_BYTES: 35531
+<<<FILE_CONTENT_START>>>
+ct uses GitHub Codespaces.
+
+Repository:
+
+`new`
+
+Expected repository path:
+
+`/workspaces/new`
+
+The latest confirmed diagnostic output reported:
+
+- Java: OpenJDK 17.0.20.1.
+- `JAVA_HOME`: `/usr/lib/jvm/java-17-openjdk-amd64`.
+- Android SDK location: `/home/codespace/android-sdk`.
+- Android platform: `android-35`.
+- Installed Android Build Tools: `35.0.0`.
+- System Gradle: `9.7.1`.
+- Git branch: `main`.
+- Git status at the time of the diagnostic: clean.
+
+An attempt to create the Android project terminated with exit code 1.
+
+The exact cause and the state of any partially created files have not been confirmed.
+
+Do not assume the project setup succeeded.
+
+## 4.2 Intended toolchain
+
+The intended configuration is:
+
+| Component | Intended version or setting | Status |
+|---|---|---|
+| JDK | 17 | `COMPLETED` — version confirmed |
+| Android SDK platform | 35 | `COMPLETED` — directory confirmed |
+| Android Build Tools 35.0.0 | Installed | `COMPLETED` — directory confirmed |
+| Android Build Tools 34.0.0 | Required by the proposed AGP setup | `NOT STARTED` — installation not verified |
+| Gradle Wrapper | 8.7 | `NOT STARTED` — existence not verified |
+| Android Gradle Plugin | 8.6.1 | `NOT STARTED` |
+| Android Lint | Plugin-provided tasks | `NOT STARTED` |
+| Android project files | Minimal Java project | `NOT STARTED` — creation not verified |
+| Successful debug build | `assembleDebug` | `NOT STARTED` |
+| Successful Lint run | `lintDebug` | `NOT STARTED` |
+| API 19 APK verification | Actual device | `NOT STARTED` |
+
+These statuses refer to the last known evidence. Update them only after checking the current environment.
+
+## 4.3 Compatibility requirements
+
+Use JDK 17, Gradle 8.7, and Android Gradle Plugin 8.6.1 as the intended initial combination.
+
+The system Gradle installation is not the version that should build the project. The project should use its checked-in Gradle Wrapper.
+
+The Android app should initially use:
+
+- `compileSdk 35`
+- `minSdk 19`
+- `targetSdk 28` as a provisional starting point, subject to a deliberate compatibility and security review.
+- Java source and target compatibility 17 for compilation.
+
+Important distinction: the Java source compatibility setting does not mean the Android 4.4 runtime supports every Java 17 API. Use Android-compatible APIs and appropriate compatibility libraries where necessary.
+
+A successful compilation does not prove runtime compatibility.
+
+Before making final decisions about `targetSdk`, examine the background execution, storage, permissions, and installation requirements of both Android 4.4 and modern Android devices.
+
+## 4.4 Environment setup procedure
+
+Before continuing
+
+<<<FILE_CONTENT_END>>>
+<<<REPOSITORY_FILE_END>>>

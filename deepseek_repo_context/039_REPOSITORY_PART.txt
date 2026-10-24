@@ -1,0 +1,133 @@
+============================================================
+DEEPSEEK REPOSITORY CONTEXT - PART 039
+============================================================
+
+<<<REPOSITORY_FILE_START>>>
+PATH: rep.py
+TYPE: TEXT
+MIME: text/x-python
+SIZE_BYTES: 18480
+<<<FILE_CONTENT_START>>>
+   name
+            )
+
+            if children:
+
+                render(
+                    children,
+                    prefix +
+                    ("    " if last else "│   ")
+                )
+
+    render(root)
+
+    return "\n".join(lines)
+
+
+# ============================================================
+# MANIFEST
+# ============================================================
+
+def create_manifest(files, tree):
+
+    lines = [
+        "DEEPSEEK REPOSITORY MANIFEST",
+        "============================",
+        "",
+        "DIRECTORY TREE",
+        "--------------",
+        "",
+        tree,
+        "",
+        "FILE LIST",
+        "---------",
+        "",
+    ]
+
+    for number, item in enumerate(files, 1):
+
+        lines.append(
+            f"{number:04d} | "
+            f"{item['type']:22} | "
+            f"{human_size(item['size']):>10} | "
+            f"{item['path']}"
+        )
+
+    return "\n".join(lines) + "\n"
+
+
+# ============================================================
+# FILE REPRESENTATION
+# ============================================================
+
+def binary_representation(item):
+
+    return (
+        "<<<REPOSITORY_FILE_START>>>\n"
+        f"PATH: {item['path']}\n"
+        f"TYPE: {item['type']}\n"
+        f"MIME: {item['mime']}\n"
+        f"SIZE_BYTES: {item['size']}\n"
+        "CONTENT: EXCLUDED BINARY/MEDIA FILE\n"
+        "<<<REPOSITORY_FILE_END>>>\n"
+    )
+
+
+def text_prefix(item):
+
+    return (
+        "<<<REPOSITORY_FILE_START>>>\n"
+        f"PATH: {item['path']}\n"
+        "TYPE: TEXT\n"
+        f"MIME: {item['mime']}\n"
+        f"SIZE_BYTES: {item['size']}\n"
+        "<<<FILE_CONTENT_START>>>\n"
+    )
+
+
+def text_suffix():
+
+    return (
+        "\n<<<FILE_CONTENT_END>>>\n"
+        "<<<REPOSITORY_FILE_END>>>\n"
+    )
+
+
+# ============================================================
+# PART HEADER
+# ============================================================
+
+def part_header(part_number):
+
+    return (
+        "============================================================\n"
+        f"DEEPSEEK REPOSITORY CONTEXT - PART {part_number:03d}\n"
+        "============================================================\n"
+        "\n"
+    )
+
+
+# ============================================================
+# WRITE PART
+# ============================================================
+
+def write_part(part_number, content):
+
+    header = part_header(part_number)
+
+    final_text = header + content
+
+    actual_length = len(final_text)
+
+    if actual_length > MAX_CHARS:
+
+        raise RuntimeError(
+            f"BUG: part {part_number} is "
+            f"{actual_length:,} characters."
+        )
+
+    path = (
+        
+
+<<<FILE_CONTENT_END>>>
+<<<REPOSITORY_FILE_END>>>

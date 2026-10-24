@@ -3,114 +3,83 @@ DEEPSEEK REPOSITORY CONTEXT - PART 005
 ============================================================
 
 <<<REPOSITORY_FILE_START>>>
-PATH: rep.py
+PATH: BuilderMemory.md
 TYPE: TEXT
-MIME: text/x-python
-SIZE_BYTES: 18480
+MIME: text/markdown
+SIZE_BYTES: 40810
 <<<FILE_CONTENT_START>>>
-       part_number += 1
-                    header = part_header(
-                        part_number
-                    )
-                    current = header
+ompleted items to `NOT STARTED` without a specific reason.
 
-            # A binary metadata block should always fit.
-            if (
-                len(header) +
-                len(block)
-                > MAX_CHARS
-            ):
+## 1.4 Keep the implementation appropriate for the device
 
-                raise RuntimeError(
-                    f"Binary metadata for "
-                    f"{item['path']} is too large."
-                )
+The Fondi tablet runs Android 4.4, API 19.
 
-            current += block
+The application must support API 19 and later.
 
-            continue
+Avoid relying on modern Android APIs without checking their availability on API 19. When necessary, implement version-specific alternatives.
 
-        # ====================================================
-        # TEXT FILE
-        # ====================================================
+Prefer Java and Android's native APIs over unnecessarily complicated frameworks.
 
-        prefix = text_prefix(item)
-        suffix = text_suffix()
+Do not introduce Kotlin, Flutter, React Native, or other frameworks unless a demonstrated technical need justifies the change.
 
-        content = item["content"]
+The application should be lightweight and suitable for an old, low-performance device.
 
-        # ----------------------------------------------------
-        # Empty text file
-        # ----------------------------------------------------
+## 1.5 Explain before making major architectural changes
 
-        if content == "":
+The chosen architecture is described below.
 
-            complete_block = (
-                prefix +
-                suffix
-            )
+Do not replace Cloudflare R2, introduce a different database, or change the application framework without explaining the reason and obtaining my agreement.
 
-            if (
-                len(current) +
-                len(complete_block)
-                > MAX_CHARS
-            ):
+Avoid unnecessary dependencies and services.
 
-                if len(current) > len(header):
+The goal is a working, understandable application, not an unnecessarily complicated production platform.
 
-                    write_part(
-                        part_number,
-                        current[len(header):]
-                    )
+## 1.6 Handle credentials securely
 
-                    part_number += 1
-                    header = part_header(
-                        part_number
-                    )
-                    current = header
+Never embed permanent Cloudflare API tokens, R2 secret keys, or other powerful cloud credentials in the Android APK.
 
-            if (
-                len(header) +
-                len(complete_block)
-                > MAX_CHARS
-            ):
+Never publish these credentials in GitHub or commit them to the repository.
 
-                raise RuntimeError(
-                    f"Metadata for empty file "
-                    f"{item['path']} is too large."
-                )
+The Worker must control authorization for cloud operations.
 
-            current += complete_block
+Use temporary, narrowly scoped upload or download URLs when appropriate.
 
-            continue
+If a credential is accidentally exposed, explain how to revoke or rotate it.
 
-        # ----------------------------------------------------
-        # TEXT FILE CONTENT
-        # ----------------------------------------------------
+## 1.7 Keep instructions efficient
 
-        position = 0
+Avoid extensive web research when established technical knowledge is sufficient.
 
-        while position < len(content):
+Consult official documentation when verifying important compatibility requirements, APIs, security rules, or changing service limits and pricing.
 
-            # Reserve space for prefix and suffix.
-            available = (
-                MAX_CHARS -
-                len(current) -
-                len(prefix) -
-                len(suffix)
-            )
+Do not spend time researching unrelated technologies.
 
-            # ------------------------------------------------
-            # No room in current part.
-            # ------------------------------------------------
+When an error occurs, diagnose the error before proposing unrelated changes.
 
-            if available <= 0:
+---
 
-                if len(current) > len(header):
+# PART 2 — WHAT WE ARE BUILDING
 
-                    write_part(
-                        part_number,
-                        current[len(
+## 2.1 Main purpose
+
+Build an Android application that turns the old Fondi tablet into an automatic photo uploader.
+
+The tablet will capture or receive photos in a local folder. The application will monitor the selected folder and upload new photos to cloud storage.
+
+The Samsung A15 will access those photos over the internet.
+
+The devices must not need to be connected to the same Wi-Fi network.
+
+The original photos must remain on the Fondi tablet.
+
+## 2.2 Essential requirements
+
+The application must eventually provide the following functionality:
+
+1. Let the user select a local photo folder.
+2. Scan that folder for photos.
+3. Identify photos that have not been uploaded successfully.
+4. Upload new photos automa
 
 <<<FILE_CONTENT_END>>>
 <<<REPOSITORY_FILE_END>>>

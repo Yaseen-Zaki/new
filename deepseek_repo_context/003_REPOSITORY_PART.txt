@@ -3,131 +3,106 @@ DEEPSEEK REPOSITORY CONTEXT - PART 003
 ============================================================
 
 <<<REPOSITORY_FILE_START>>>
-PATH: rep.py
+PATH: app/src/main/AndroidManifest.xml
 TYPE: TEXT
-MIME: text/x-python
-SIZE_BYTES: 18480
+MIME: application/xml
+SIZE_BYTES: 915
 <<<FILE_CONTENT_START>>>
-       name
-            )
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-            if children:
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
-                render(
-                    children,
-                    prefix +
-                    ("    " if last else "│   ")
-                )
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher"
+        android:label="Fondi Photo Sync"
+        android:supportsRtl="true"
+        android:theme="@android:style/Theme.Light">
 
-    render(root)
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
 
-    return "\n".join(lines)
+    </application>
 
+</manifest>
 
-# ============================================================
-# MANIFEST
-# ============================================================
+<<<FILE_CONTENT_END>>>
+<<<REPOSITORY_FILE_END>>>
+<<<REPOSITORY_FILE_START>>>
+PATH: app/src/main/java/com/fondi/photosync/MainActivity.java
+TYPE: TEXT
+MIME: text/x-java
+SIZE_BYTES: 524
+<<<FILE_CONTENT_START>>>
+package com.fondi.photosync;
 
-def create_manifest(files, tree):
+import android.app.Activity;
+import android.os.Bundle;
+import android.widget.TextView;
 
-    lines = [
-        "DEEPSEEK REPOSITORY MANIFEST",
-        "============================",
-        "",
-        "DIRECTORY TREE",
-        "--------------",
-        "",
-        tree,
-        "",
-        "FILE LIST",
-        "---------",
-        "",
-    ]
+public class MainActivity extends Activity {
 
-    for number, item in enumerate(files, 1):
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-        lines.append(
-            f"{number:04d} | "
-            f"{item['type']:22} | "
-            f"{human_size(item['size']):>10} | "
-            f"{item['path']}"
-        )
+        TextView textView = new TextView(this);
+        textView.setText("Fondi Photo Sync\n\nPhase 0 baseline build.");
+        textView.setTextSize(18f);
+        textView.setPadding(48, 48, 48, 48);
 
-    return "\n".join(lines) + "\n"
+        setContentView(textView);
+    }
+}
 
+<<<FILE_CONTENT_END>>>
+<<<REPOSITORY_FILE_END>>>
+<<<REPOSITORY_FILE_START>>>
+PATH: app/src/main/res/drawable/ic_launcher.xml
+TYPE: TEXT
+MIME: application/xml
+SIZE_BYTES: 223
+<<<FILE_CONTENT_START>>>
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+       android:shape="rectangle">
+    <solid android:color="#3F51B5" />
+    <corners android:radius="8dp" />
+</shape>
 
-# ============================================================
-# FILE REPRESENTATION
-# ============================================================
+<<<FILE_CONTENT_END>>>
+<<<REPOSITORY_FILE_END>>>
+<<<REPOSITORY_FILE_START>>>
+PATH: build.gradle
+TYPE: TEXT
+MIME: unknown
+SIZE_BYTES: 73
+<<<FILE_CONTENT_START>>>
+plugins {
+    id 'com.android.application' version '8.6.1' apply false
+}
 
-def binary_representation(item):
+<<<FILE_CONTENT_END>>>
+<<<REPOSITORY_FILE_END>>>
+<<<REPOSITORY_FILE_START>>>
+PATH: BuilderMemory.md
+TYPE: TEXT
+MIME: text/markdown
+SIZE_BYTES: 40810
+<<<FILE_CONTENT_START>>>
+# FONDI PHOTO SYNC — DEEPSEEK BUILDER MEMORY
 
-    return (
-        "<<<REPOSITORY_FILE_START>>>\n"
-        f"PATH: {item['path']}\n"
-        f"TYPE: {item['type']}\n"
-        f"MIME: {item['mime']}\n"
-        f"SIZE_BYTES: {item['size']}\n"
-        "CONTENT: EXCLUDED BINARY/MEDIA FILE\n"
-        "<<<REPOSITORY_FILE_END>>>\n"
-    )
-
-
-def text_prefix(item):
-
-    return (
-        "<<<REPOSITORY_FILE_START>>>\n"
-        f"PATH: {item['path']}\n"
-        "TYPE: TEXT\n"
-        f"MIME: {item['mime']}\n"
-        f"SIZE_BYTES: {item['size']}\n"
-        "<<<FILE_CONTENT_START>>>\n"
-    )
-
-
-def text_suffix():
-
-    return (
-        "\n<<<FILE_CONTENT_END>>>\n"
-        "<<<REPOSITORY_FILE_END>>>\n"
-    )
-
-
-# ============================================================
-# PART HEADER
-# ============================================================
-
-def part_header(part_number):
-
-    return (
-        "============================================================\n"
-        f"DEEPSEEK REPOSITORY CONTEXT - PART {part_number:03d}\n"
-        "============================================================\n"
-        "\n"
-    )
-
-
-# ============================================================
-# WRITE PART
-# ============================================================
-
-def write_part(part_number, content):
-
-    header = part_header(part_number)
-
-    final_text = header + content
-
-    actual_length = len(final_text)
-
-    if actual_length > MAX_CHARS:
-
-        raise RuntimeError(
-            f"BUG: part {part_number} is "
-            f"{actual_length:,} characters."
-        )
-
-    path = (
-    
+**Document type:** Master project specification, implementation roadmap, and progress tracker  
+**Project status:** En
 
 <<<FILE_CONTENT_END>>>
 <<<REPOSITORY_FILE_END>>>

@@ -1,0 +1,93 @@
+============================================================
+DEEPSEEK REPOSITORY CONTEXT - PART 024
+============================================================
+
+<<<REPOSITORY_FILE_START>>>
+PATH: BuilderMemory.md.bak
+TYPE: TEXT
+MIME: application/x-trash
+SIZE_BYTES: 35531
+<<<FILE_CONTENT_START>>>
+:
+
+1. Open a new Codespaces terminal.
+2. Run `pwd`.
+3. Confirm that `/workspaces/new` is the repository root.
+4. Inspect existing files.
+5. Run `git status`.
+6. Verify Java and SDK paths.
+7. Check whether the Gradle Wrapper exists.
+8. Check whether the Android project files already exist.
+9. Continue from the actual state instead of repeating the previous setup script.
+
+Never overwrite the repository merely to reproduce an expected folder structure.
+
+---
+
+# PART 5 — IMPLEMENTATION ROADMAP
+
+Implement the project in the following order.
+
+The sequence is intentional: establish a reliable build before implementing application features, then establish secure cloud communication before implementing automatic uploads.
+
+## PHASE 0 — ENVIRONMENT AND PROJECT INITIALIZATION
+
+### 0.1 Inspect the existing Codespace
+
+- [x] JDK 17 version verified.
+- [x] Android SDK platform 35 directory verified.
+- [x] Android Build Tools 35.0.0 directory verified.
+- [x] Repository name confirmed as `new`.
+- [ ] Existing repository files inspected after the interrupted setup.
+- [ ] Current Git status checked again.
+- [ ] Environment setup state reconciled.
+
+### 0.2 Establish the build toolchain
+
+- [ ] Install or verify Android Build Tools 34.0.0.
+- [ ] Accept required Android SDK licences.
+- [ ] Create and verify Gradle Wrapper 8.7.
+- [ ] Configure Android Gradle Plugin 8.6.1.
+- [ ] Configure the Android SDK paths.
+- [ ] Verify the Gradle Wrapper uses JDK 17.
+- [ ] Verify the Gradle and plugin versions.
+- [ ] Confirm the dependency repositories resolve correctly.
+
+### 0.3 Create the minimal Android project
+
+- [ ] Create or repair `settings.gradle`.
+- [ ] Create or repair root `build.gradle`.
+- [ ] Create or repair `gradle.properties`.
+- [ ] Create the Gradle Wrapper files.
+- [ ] Create `app/build.gradle`.
+- [ ] Create `AndroidManifest.xml`.
+- [ ] Create a basic Java `MainActivity`.
+- [ ] Configure namespace and application ID.
+- [ ] Set `minSdk` to 19.
+- [ ] Set the provisional target SDK.
+- [ ] Confirm the project structure.
+
+### 0.4 Verify the build
+
+- [ ] Run `./gradlew --version`.
+- [ ] Run `./gradlew clean`.
+- [ ] Run `./gradlew assembleDebug`.
+- [ ] Run `./gradlew lintDebug`.
+- [ ] Inspect any Lint errors and warnings.
+- [ ] Confirm the APK exists.
+- [ ] Inspect the APK metadata.
+- [ ] Save the successful command output as evidence.
+- [ ] Commit the verified baseline to Git.
+
+**Phase 0 acceptance criteria:** The project builds consistently through the Gradle Wrapper, Lint runs, and a debug APK is generated.
+
+Do not begin major feature implementation before this phase is stable.
+
+---
+
+## PHASE 1 — BASIC ANDROID APPLICATION
+
+### 1.
+
+<<<FILE_CONTENT_END>>>
+<<<REPOSITORY_FILE_END>>>

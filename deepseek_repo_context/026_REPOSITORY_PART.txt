@@ -1,0 +1,98 @@
+============================================================
+DEEPSEEK REPOSITORY CONTEXT - PART 026
+============================================================
+
+<<<REPOSITORY_FILE_START>>>
+PATH: BuilderMemory.md.bak
+TYPE: TEXT
+MIME: application/x-trash
+SIZE_BYTES: 35531
+<<<FILE_CONTENT_START>>>
+uch as:
+
+- Discovered.
+- Pending.
+- Uploading.
+- Uploaded.
+- Retry scheduled.
+- Permanently failed.
+
+Define valid state transitions.
+
+### 3.3 Duplicate prevention
+
+Prevent the same local photo from being added to the queue repeatedly.
+
+Use a stable local identity and, where appropriate, a content hash.
+
+Do not assume that filenames are unique.
+
+The remote naming strategy must prevent unintended overwrites and handle two different photos with identical names.
+
+### 3.4 Crash recovery
+
+- [ ] Save queue changes persistently.
+- [ ] Recover work after an application crash.
+- [ ] Recover from interruption during an upload.
+- [ ] Avoid treating an interrupted upload as successful.
+- [ ] Verify remote upload success before recording completion.
+- [ ] Ensure that retrying an operation does not create unintended duplicates.
+
+**Phase 3 acceptance criteria:** Queue state survives restarts, repeated scans do not create duplicate jobs, and interrupted uploads can be recovered safely.
+
+---
+
+## PHASE 4 — CLOUDFLARE ACCOUNT AND STORAGE
+
+### 4.1 Cloudflare setup
+
+- [ ] Confirm the Cloudflare account is available.
+- [ ] Create a private R2 bucket.
+- [ ] Record the bucket name in private project configuration.
+- [ ] Understand the bucket's storage and request limits.
+- [ ] Review current pricing and free allowances.
+- [ ] Avoid enabling public bucket access.
+
+Do not store credentials in source files.
+
+### 4.2 Worker setup
+
+- [ ] Create the Worker.
+- [ ] Configure the required R2 binding.
+- [ ] Configure secret values through Cloudflare's supported secret mechanism.
+- [ ] Verify that the Worker can access the intended bucket.
+- [ ] Keep development and production settings distinguishable.
+- [ ] Record the deployed Worker URL without recording secret values.
+
+### 4.3 Secure authorization design
+
+Determine how the Android app authenticates to the Worker.
+
+The design must distinguish:
+
+- Authentication: determining who is making a request.
+- Authorization: determining what that requester is allowed to do.
+- Temporary upload authorization: allowing a restricted operation for a limited period.
+
+Choose a simple, defensible authentication design suitable for a single-device project.
+
+Do not mistake an unguessable URL for complete user authentication.
+
+### 4.4 API design
+
+Document the request and response format before implementing the Android client.
+
+Possible endpoints include:
+
+- Health or connectivity check.
+- Request upload authorization.
+- Request a photo list, if needed.
+- Request authorized photo access, if needed.
+
+The exact endpoints are not yet implemented and must not be treated as existing.
+
+For every endpoint, document:
+
+
+<<<FILE_CONTENT_END>>>
+<<<REPOSITORY_FILE_END>>>

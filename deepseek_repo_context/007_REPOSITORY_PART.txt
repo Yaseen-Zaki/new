@@ -3,121 +3,99 @@ DEEPSEEK REPOSITORY CONTEXT - PART 007
 ============================================================
 
 <<<REPOSITORY_FILE_START>>>
-PATH: rep.py
+PATH: BuilderMemory.md
 TYPE: TEXT
-MIME: text/x-python
-SIZE_BYTES: 18480
+MIME: text/markdown
+SIZE_BYTES: 40810
 <<<FILE_CONTENT_START>>>
-    position += len(piece)
+─────┬───────────────┘
+                    │
+                    │ Authorized access
+                    ▼
+    ┌───────────────────────────────┐
+    │ SAMSUNG GALAXY A15            │
+    │                               │
+    │ Cloudflare dashboard initially│
+    │ Optional custom gallery later │
+    └───────────────────────────────┘
 
-            # ------------------------------------------------
-            # If the file has more content, flush this part.
-            # ------------------------------------------------
+## 3.1 Android application
 
-            if position < len(content):
+The Android app is responsible for:
 
-                write_part(
-                    part_number,
-                    current[len(header):]
-                )
+- Selecting the photo folder.
+- Scanning for photos.
+- Maintaining the upload queue.
+- Tracking upload status.
+- Requesting authorization from the Worker.
+- Uploading photo data.
+- Retrying failed operations.
+- Saving progress locally.
+- Displaying controls and status information.
 
-                part_number += 1
-                header = part_header(
-                    part_number
-                )
-                current = header
+## 3.2 Cloudflare Worker
 
-    # --------------------------------------------------------
-    # FINAL PART
-    # --------------------------------------------------------
+The Worker is the backend service.
 
-    if len(current) > len(header):
+It will:
 
-        write_part(
-            part_number,
-            current[len(header):]
-        )
+- Receive requests from the Android application.
+- Authenticate and authorize requests.
+- Validate filenames, file sizes, and other required fields.
+- Issue appropriately restricted temporary upload URLs or handle uploads through another secure design.
+- Restrict access to the intended bucket and objects.
+- Provide additional endpoints only when needed.
+- Return understandable HTTP status codes and error responses.
 
-    # --------------------------------------------------------
-    # VERIFY EVERYTHING
-    # --------------------------------------------------------
+Do not expose a powerful R2 credential to the Android app.
 
-    print()
-    print("Verifying generated parts...")
+## 3.3 Cloudflare R2
 
-    generated = sorted(
-        OUTPUT_DIR.glob(
-            "*_REPOSITORY_PART.txt"
-        )
-    )
+R2 stores the uploaded photos as objects.
 
-    for path in generated:
+The bucket should remain private.
 
-        actual = len(
-            path.read_text(
-                encoding="utf-8"
-            )
-        )
+Object keys must be generated and managed carefully to prevent unintended overwrites or collisions.
 
-        if actual > MAX_CHARS:
+The design must consider how the application distinguishes photos with identical filenames.
 
-            raise RuntimeError(
-                f"VERIFICATION FAILED: "
-                f"{path.name} contains "
-                f"{actual:,} characters."
-            )
+## 3.4 Samsung access
 
-        print(
-            f"OK: {path.name} -> "
-            f"{actual:,} characters"
-        )
+Initially, I am willing to use the Cloudflare dashboard on the Samsung A15 to inspect and download objects.
 
-    # --------------------------------------------------------
-    # SUMMARY
-    # --------------------------------------------------------
+A custom photo gallery is optional and should not delay the first working version.
 
-    text_count = sum(
-        item["type"] == "TEXT"
-        for item in files
-    )
+If a gallery is eventually developed, it must access photos through an authorized mechanism rather than making the entire bucket public.
 
-    binary_count = (
-        len(files) -
-        text_count
-    )
+## 3.5 Network independence
 
-    print()
-    print("============================================================")
-    print("EXPORT COMPLETE")
-    print("============================================================")
-    print(
-        f"Total files:        {len(files):,}"
-    )
-    print(
-        f"Text files:         {text_count:,}"
-    )
-    print(
-        f"Binary/media files: {binary_count:,}"
-    )
-    print(
-        f"Repository parts:   {len(generated):,}"
-    )
-    print(
-        f"Hard limit:         {MAX_CHARS:,} characters"
-    )
-    print()
-    print(
-        "Every generated part passed final verification."
-    )
-    print()
-    print(
-        "Send 000_MANIFEST.txt first, then "
-        "001, 002, 003, ... in order."
-    )
+The Fondi tablet and Samsung A15 do not need to share a local network.
 
+The Fondi tablet uploads through an internet connection. The Samsung accesses the stored photos through its own internet connection.
 
-if __name__ == "__main__":
-    main()
+The Fondi tablet currently works with a Samsung hotspot, while the home WE/TE Data router has caused connection timeouts.
+
+Treat this as a separate network troubleshooting issue. Do not assume it is caused by the Android application or Cloudflare.
+
+---
+
+# PART 4 — DEVELOPMENT ENVIRONMENT
+
+## 4.1 Current environment information
+
+The project uses GitHub Codespaces.
+
+Repository:
+
+`new`
+
+Repository path:
+
+`/workspaces/new`
+
+The latest confirmed environment reports:
+
+- Java: OpenJDK 17.0.20.1 (`JAVA_HOME`: `/usr/lib/jvm/java-17-openjdk-amd64`
 
 <<<FILE_CONTENT_END>>>
 <<<REPOSITORY_FILE_END>>>

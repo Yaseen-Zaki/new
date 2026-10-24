@@ -1,0 +1,50 @@
+============================================================
+DEEPSEEK REPOSITORY CONTEXT - PART 009
+============================================================
+
+<<<REPOSITORY_FILE_START>>>
+PATH: BuilderMemory.md
+TYPE: TEXT
+MIME: text/markdown
+SIZE_BYTES: 40810
+<<<FILE_CONTENT_START>>>
+ibility.
+
+**Correction to earlier guidance:** This memory previously said "Java source and target compatibility 17 for compilation." That was wrong for this project. The **build toolchain** runs on JDK 17; the **app bytecode** targets Java 8. Setting source/target compatibility to 17 would allow language features and APIs that are not available on Android 4.4 at runtime. Core library desugaring (`desugar_jdk_libs`) is **not** enabled in Phase 0. If it is added later, the specific version chosen must be verified compatible with `minSdk 19` — the `2.0.x` line requires `minSdk 21` and cannot be used as-is.
+
+**Additional Phase 0 decisions, recorded so they are not accidentally reversed:**
+
+- **`ExpiredTargetSdkVersion` lint rule is disabled** inside a documented `lint { ... }` block in `app/build.gradle`. This rule enforces Google Play's minimum-`targetSdk` policy. The app is side-loaded onto the Fondi Android 4.4 tablet and is not distributed through Google Play, so the rule does not apply. Disabling it is a deliberate, justified choice — not a workaround for a technical failure.
+- **Launcher icon is a project resource** (`app/src/main/res/drawable/ic_launcher.xml`), **not** a framework reference. `MissingApplicationIcon` is not satisfied by `@android:drawable/*` references. The icon file is a small `<shape>` drawable; it can be replaced with a real image in a later phase without touching `AndroidManifest.xml`.
+- **No `local.properties` file is committed.** `ANDROID_HOME` from the Codespace environment (`/home/codespace/android-sdk`) is sufficient. Committing a `local.properties` with a hard-coded SDK path would break when the workspace path differs.
+- **`.gitignore` excludes** `.gradle/`, `build/`, `app/build/`, `local.properties`, `*.iml`, `.idea/`, `.DS_Store`, `captures/`.
+
+
+Before making final decisions about `targetSdk`, examine the background execution, storage, permissions, and installation requirements of both Android 4.4 and modern Android devices.
+
+## 4.4 Environment setup procedure
+
+Before continuing:
+
+1. Open a new Codespaces terminal.
+2. Run `pwd`.
+3. Confirm that `/workspaces/new` is the repository root.
+4. Inspect existing files.
+5. Run `git status`.
+6. Verify Java and SDK paths.
+7. Check whether the Gradle Wrapper exists.
+8. Check whether the Android project files already exist.
+9. Continue from the actual state instead of repeating the previous setup script.
+
+Never overwrite the repository merely to reproduce an expected folder structure.
+
+---
+
+# PART 5 — IMPLEMENTATION ROADMAP
+
+Implement the project in the following order.
+
+The sequence is intentional: establish a reliable build before implementing 
+
+<<<FILE_CONTENT_END>>>
+<<<REPOSITORY_FILE_END>>>

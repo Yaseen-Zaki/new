@@ -1,0 +1,112 @@
+============================================================
+DEEPSEEK REPOSITORY CONTEXT - PART 027
+============================================================
+
+<<<REPOSITORY_FILE_START>>>
+PATH: BuilderMemory.md.bak
+TYPE: TEXT
+MIME: application/x-trash
+SIZE_BYTES: 35531
+<<<FILE_CONTENT_START>>>
+- HTTP method.
+- URL path.
+- Required headers.
+- Request body.
+- Successful response.
+- Error responses.
+- Authentication requirements.
+- Authorization rules.
+- Expected status codes.
+
+### 4.5 Secure upload flow
+
+A possible flow is:
+
+1. The app identifies a pending photo.
+2. It requests upload authorization from the Worker.
+3. The Worker authenticates the request and validates the proposed object key.
+4. The Worker returns an appropriately restricted temporary upload URL.
+5. The app uploads the photo bytes using HTTPS.
+6. The app verifies the result.
+7. The app records the upload as successful.
+
+Choose the exact implementation based on the available Cloudflare APIs and security requirements.
+
+The app must not contain permanent R2 credentials.
+
+### 4.6 Cloud tests
+
+- [ ] Test the Worker independently.
+- [ ] Test authorized requests.
+- [ ] Test rejected or malformed requests.
+- [ ] Test a small image upload.
+- [ ] Verify the resulting object in R2.
+- [ ] Test expired or invalid authorization.
+- [ ] Confirm that the bucket remains private.
+- [ ] Confirm that permanent credentials are not exposed to the client.
+
+**Phase 4 acceptance criteria:** A small test image can be uploaded securely to the private bucket, and unauthorized access is rejected.
+
+---
+
+## PHASE 5 — ANDROID NETWORKING AND UPLOAD MANAGER
+
+### 5.1 HTTP client
+
+Implement an Android-compatible HTTPS client.
+
+It must support:
+
+- Request timeouts.
+- Response handling.
+- Error reporting.
+- Appropriate resource cleanup.
+- Correct handling of file streams.
+- TLS certificate verification.
+- Safe handling of interrupted connections.
+
+Do not disable certificate validation to solve connection problems.
+
+### 5.2 Upload manager
+
+- [ ] Request upload authorization.
+- [ ] Upload a single photo.
+- [ ] Handle success and failure.
+- [ ] Update the local database.
+- [ ] Prevent concurrent processing of the same queue item.
+- [ ] Limit simultaneous uploads.
+- [ ] Avoid loading entire images into memory unnecessarily.
+- [ ] Handle HTTP status codes correctly.
+
+### 5.3 Retry policy
+
+Implement bounded or otherwise controlled retry behavior.
+
+Consider:
+
+- Temporary network failures.
+- Timeouts.
+- Rate limits.
+- Server errors.
+- Expired upload URLs.
+- Authentication failures.
+- Invalid files.
+- Permanent client errors.
+
+Use backoff for repeated transient failures.
+
+Do not retry permanent authorization failures indefinitely.
+
+### 5.4 Upload integrity
+
+Where supported, use appropriate checks such as:
+
+- HTTP response verification.
+- Expected object identity.
+- File size verification.
+- Checksums when practical.
+
+Do not mark an upload complete merely because the request st
+
+<<<FILE_CONTENT_END>>>
+<<<REPOSITORY_FILE_END>>>
