@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Fondi Photo Sync</string>
+    <string name="status_stopped">Status: Stopped</string>
+    <string name="status_scanning">Status: Scanning</string>
+    <string name="status_uploading">Status: Uploading</string>
+    <string name="status_paused">Status: Paused</string>
+    <string name="counters_fmt">Pending: %1$d  ·  Uploaded: %2$d  ·  Failed: %3$d</string>
+    <string name="folder_none">Folder: (none selected)</string>
+    <string name="folder_fmt">Folder: %1$s</string>
+    <string name="button_choose_folder">Choose Folder</string>
+    <string name="button_start">Start</string>
+    <string name="button_pause">Pause</string>
+    <string name="button_stop">Stop</string>
+    <string name="no_errors">(no errors)</string>
+    <string name="last_error_fmt">Last error: %1$s</string>
+</resources>

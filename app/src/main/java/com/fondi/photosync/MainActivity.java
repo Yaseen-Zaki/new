@@ -1,7 +1,6 @@
 package com.fondi.photosync;
 
 import android.app.Activity;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -9,27 +8,27 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-
 public class MainActivity extends Activity {
 
-    // Public HTTPS endpoint with a valid certificate.
-    // Replace with your own Cloudflare-hosted URL when ready.
-    private static final String TEST_URL = "https://httpbin.org/get";
-
-    private static final int CONNECT_TIMEOUT_MS = 15000;
-    private static final int READ_TIMEOUT_MS = 15000;
-    private static final int MAX_BODY_CHARS = 4096;
+    private static final int STATE_STOPPED = 0;
+    private static final int STATE_SCANNING = 1;
+    private static final int STATE_UPLOADING = 2;
+    private static final int STATE_PAUSED = 3;
 
     private TextView statusView;
-    private TextView responseView;
-    private Button fetchButton;
-    private FetchTask currentTask;
+    private TextView countersView;
+    private TextView folderView;
+    private TextView lastErrorView;
+    private Button startButton;
+    private Button pauseButton;
+    private Button stopButton;
+
+    private int currentState = STATE_STOPPED;
+    private int pendingCount = 0;
+    private int uploadedCount = 0;
+    private int failedCount = 0;
+    private String lastError = null;
+    private String selectedFolder = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,140 +36,124 @@ public class MainActivity extends Activity {
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(48, 48, 48, 48);
+        root.setPadding(32, 32, 32, 32);
 
         TextView title = new TextView(this);
-        title.setText("Fondi Photo Sync");
+        title.setText(R.string.app_name);
         title.setTextSize(20f);
+        title.setPadding(0, 0, 0, 16);
         root.addView(title);
 
         statusView = new TextView(this);
-        statusView.setText("Idle.");
         statusView.setTextSize(16f);
-        statusView.setPadding(0, 24, 0, 24);
+        statusView.setPadding(0, 0, 0, 8);
         root.addView(statusView);
 
-        fetchButton = new Button(this);
-        fetchButton.setText("Fetch test URL");
-        fetchButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startFetch();
+        countersView = new TextView(this);
+        countersView.setTextSize(14f);
+        countersView.setPadding(0, 0, 0, 16);
+        root.addView(countersView);
+
+        folderView = new TextView(this);
+        folderView.setTextSize(14f);
+        folderView.setPadding(0, 0, 0, 8);
+        root.addView(folderView);
+
+        Button chooseFolderButton = new Button(this);
+        chooseFolderButton.setText(R.string.button_choose_folder);
+        chooseFolderButton.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                // Phase 2b will open a directory browser here.
             }
         });
-        root.addView(fetchButton);
+        root.addView(chooseFolderButton);
+
+        LinearLayout buttonRow = new LinearLayout(this);
+        buttonRow.setOrientation(LinearLayout.HORIZONTAL);
+        buttonRow.setPadding(0, 16, 0, 16);
+
+        startButton = new Button(this);
+        startButton.setText(R.string.button_start);
+        startButton.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { onStartClicked(); }
+        });
+        buttonRow.addView(startButton);
+
+        pauseButton = new Button(this);
+        pauseButton.setText(R.string.button_pause);
+        pauseButton.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { onPauseClicked(); }
+        });
+        buttonRow.addView(pauseButton);
+
+        stopButton = new Button(this);
+        stopButton.setText(R.string.button_stop);
+        stopButton.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { onStopClicked(); }
+        });
+        buttonRow.addView(stopButton);
+
+        root.addView(buttonRow);
 
         ScrollView scroll = new ScrollView(this);
         LinearLayout.LayoutParams scrollParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                0,
-                1f
-        );
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f);
         scroll.setLayoutParams(scrollParams);
 
-        responseView = new TextView(this);
-        responseView.setTextSize(12f);
-        responseView.setText("");
-        scroll.addView(responseView);
+        lastErrorView = new TextView(this);
+        lastErrorView.setTextSize(12f);
+        scroll.addView(lastErrorView);
 
         root.addView(scroll);
 
         setContentView(root);
+
+        render();
     }
 
-    private void startFetch() {
-        if (currentTask != null) {
-            statusView.setText("A request is already in progress.");
-            return;
-        }
-        fetchButton.setEnabled(false);
-        statusView.setText("Requesting " + TEST_URL + " ...");
-        responseView.setText("");
-        currentTask = new FetchTask();
-        currentTask.execute(TEST_URL);
+    private void onStartClicked() {
+        currentState = STATE_SCANNING;
+        render();
     }
 
-    private class FetchTask extends AsyncTask<String, Void, FetchResult> {
-
-        @Override
-        protected FetchResult doInBackground(String... params) {
-            String urlString = params[0];
-            FetchResult result = new FetchResult();
-            HttpURLConnection conn = null;
-            InputStream in = null;
-            BufferedReader reader = null;
-            try {
-                URL url = new URL(urlString);
-                conn = (HttpURLConnection) url.openConnection();
-                conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
-                conn.setReadTimeout(READ_TIMEOUT_MS);
-                conn.setRequestMethod("GET");
-                conn.setRequestProperty("Accept", "application/json");
-                conn.setInstanceFollowRedirects(true);
-
-                int code = conn.getResponseCode();
-                result.httpCode = code;
-                result.httpMessage = conn.getResponseMessage();
-
-                in = (code >= 200 && code < 400)
-                        ? conn.getInputStream()
-                        : conn.getErrorStream();
-
-                if (in != null) {
-                    reader = new BufferedReader(new InputStreamReader(in, "UTF-8"));
-                    StringBuilder sb = new StringBuilder();
-                    char[] buf = new char[1024];
-                    int read;
-                    while ((read = reader.read(buf)) != -1) {
-                        sb.append(buf, 0, read);
-                        if (sb.length() >= MAX_BODY_CHARS) {
-                            sb.append("\n... [truncated]");
-                            break;
-                        }
-                    }
-                    result.body = sb.toString();
-                } else {
-                    result.body = "(empty response body)";
-                }
-            } catch (IOException e) {
-                result.error = e.getClass().getSimpleName() + ": " + e.getMessage();
-            } catch (Exception e) {
-                result.error = e.getClass().getSimpleName() + ": " + e.getMessage();
-            } finally {
-                if (reader != null) {
-                    try { reader.close(); } catch (IOException ignored) { }
-                }
-                if (in != null) {
-                    try { in.close(); } catch (IOException ignored) { }
-                }
-                if (conn != null) {
-                    conn.disconnect();
-                }
-            }
-            return result;
-        }
-
-        @Override
-        protected void onPostExecute(FetchResult result) {
-            currentTask = null;
-            fetchButton.setEnabled(true);
-
-            if (result.error != null) {
-                statusView.setText("Request failed: " + result.error);
-                responseView.setText("");
-                return;
-            }
-
-            statusView.setText("HTTP " + result.httpCode
-                    + " " + (result.httpMessage != null ? result.httpMessage : ""));
-            responseView.setText(result.body != null ? result.body : "");
+    private void onPauseClicked() {
+        if (currentState == STATE_SCANNING || currentState == STATE_UPLOADING) {
+            currentState = STATE_PAUSED;
+            render();
         }
     }
 
-    private static class FetchResult {
-        int httpCode;
-        String httpMessage;
-        String body;
-        String error;
+    private void onStopClicked() {
+        currentState = STATE_STOPPED;
+        render();
+    }
+
+    private void render() {
+        switch (currentState) {
+            case STATE_SCANNING:  statusView.setText(R.string.status_scanning);  break;
+            case STATE_UPLOADING: statusView.setText(R.string.status_uploading); break;
+            case STATE_PAUSED:    statusView.setText(R.string.status_paused);    break;
+            case STATE_STOPPED:
+            default:              statusView.setText(R.string.status_stopped);   break;
+        }
+
+        countersView.setText(getString(
+                R.string.counters_fmt, pendingCount, uploadedCount, failedCount));
+
+        if (selectedFolder == null) {
+            folderView.setText(R.string.folder_none);
+        } else {
+            folderView.setText(getString(R.string.folder_fmt, selectedFolder));
+        }
+
+        startButton.setEnabled(currentState == STATE_STOPPED || currentState == STATE_PAUSED);
+        pauseButton.setEnabled(currentState == STATE_SCANNING || currentState == STATE_UPLOADING);
+        stopButton.setEnabled(currentState != STATE_STOPPED);
+
+        if (lastError == null) {
+            lastErrorView.setText(R.string.no_errors);
+        } else {
+            lastErrorView.setText(getString(R.string.last_error_fmt, lastError));
+        }
     }
 }
