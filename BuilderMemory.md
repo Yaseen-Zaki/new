@@ -228,11 +228,16 @@ The original R2-based Phase 4 is superseded. Retained here only to explain why t
 - [x] Confirmed: Durable Objects with `new_sqlite_classes` are available on Free plan
 - [x] Design chosen: DO keyed by verified SHA-256 provides atomic serialization
 
-### 4B.4 Authorization (deferred)
-- [ ] Decide Worker auth scheme (static bearer token vs. HMAC-signed requests)
-- [ ] Implement auth middleware
-- [ ] Rate limiting
-- [ ] Reject malformed / oversized / unauthorized requests before B2 PUT
+### 4B.4 Authorization
+- [x] Scheme: static bearer token in `Authorization: Bearer <token>`
+- [x] `APP_TOKEN` stored as Worker secret (not in repo, not in wrangler.toml)
+- [x] `authenticate()` runs on `/upload` before any body read
+- [x] `/health` remains public (returns only config booleans, no secrets)
+- [x] Timing-safe comparison via `crypto.subtle.timingSafeEqual` with length padding
+- [x] Fails closed if `APP_TOKEN` is missing (`500 server_misconfigured`)
+- [x] Verified: no token → 401; wrong token → 401; correct token → 200 duplicate:true
+- [ ] Rate limiting (NOT STARTED)
+- **Token location:** user's password manager, name `fondi-worker-APP_TOKEN` (not in repo). The value was generated once with `openssl rand -hex 32`.
 
 ### 4B.5 Upload endpoint
 - [x] `POST /upload` accepts raw bytes + `X-Content-SHA256`
@@ -385,19 +390,20 @@ Unchanged format. Record: component, status, files, commands, test, actual resul
 ---
 
 **Component:** Phase 4B — Worker + B2 upload backend
-**Status:** Upload + dedup COMPLETED; auth, listing, reading NOT STARTED
+**Status:** Upload + dedup + auth COMPLETED; rate limiting, listing, reading NOT STARTED
 **Files:**
 - `worker/wrangler.toml` (DO binding + vars)
-- `worker/src/index.js` (sha256 `0ee036fe316e5d76ce8da9ba9f2ae1cd2536c5d7697a051ebe04500aa71409bb`)
+- `worker/src/index.js` (sha256 `3a43d3672fa358328588ff077020f5ca87005821269e6ba7653a533d36d885fe`)
 - `worker/package.json` (`type: module`, deploy/dev scripts, `aws4fetch` dependency)
 
 **Commands:**
 - `npx wrangler secret put B2_APPLICATION_KEY_ID`
 - `npx wrangler secret put B2_APPLICATION_KEY`
+- `npx wrangler secret put APP_TOKEN` (new: bearer token for Android)
 - `npx wrangler deploy`
 - `curl -i -X POST …/upload -H "X-Content-SHA256: $HASH" -H "Content-Type: image/png" --data-binary @test.png`
 
 **Tests:** health check; first upload; duplicate upload; B2 console object inspection
 **Results:** `201` then `200 duplicate:true`; same key returned both times; object present in bucket
-**Limitations:** No auth; no rate limiting; no list/read endpoints; concurrency not yet exercised
-**Next step:** Add bearer-token auth gate to Worker, then move to Android folder scanning + hashing + upload client (Phases 2, 3, 5).
+**Limitations:** No rate limiting; no list/read endpoints; concurrency not yet exercised; token stored in APK will be extractable (documented trade-off)
+**Next step:** Phase 2 — Android folder selection and scanning (framework views, API 19).

@@ -11,12 +11,47 @@ export default {
     }
 
     if (url.pathname === '/upload' && request.method === 'POST') {
+      const authError = await authenticate(request, env);
+      if (authError) return authError;
       return handleUpload(request, env);
     }
 
     return jsonResponse({ ok: false, error: 'not_found' }, 404);
   }
 };
+
+async function authenticate(request, env) {
+  const header = request.headers.get('authorization') || '';
+  const prefix = 'Bearer ';
+  if (!header.startsWith(prefix)) {
+    return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
+  }
+  const provided = header.slice(prefix.length).trim();
+  const expected = env.APP_TOKEN;
+  if (typeof expected !== 'string' || expected.length === 0) {
+    // Misconfiguration: secret not set. Fail closed.
+    return jsonResponse({ ok: false, error: 'server_misconfigured' }, 500);
+  }
+  const ok = await timingSafeEqual(provided, expected);
+  if (!ok) {
+    return jsonResponse({ ok: false, error: 'unauthorized' }, 401);
+  }
+  return null;
+}
+
+async function timingSafeEqual(a, b) {
+  const enc = new TextEncoder();
+  const aBytes = enc.encode(a);
+  const bBytes = enc.encode(b);
+  // timingSafeEqual requires equal length; pad to avoid length-based early exit.
+  const len = Math.max(aBytes.length, bBytes.length);
+  const aPadded = new Uint8Array(len);
+  const bPadded = new Uint8Array(len);
+  aPadded.set(aBytes);
+  bPadded.set(bBytes);
+  const equal = crypto.subtle.timingSafeEqual(aPadded, bPadded);
+  return equal && aBytes.length === bBytes.length;
+}
 
 async function handleUpload(request, env) {
   const contentLength = request.headers.get('content-length');
@@ -112,7 +147,7 @@ async function uploadToB2(env, key, body, contentType) {
       body: body,
       headers: {
         'Content-Type': contentType
-        // Deliberately NOT sending x-amz-checksum-* — B2 S3-compatible API rejects it [citation:4]
+        // Deliberately NOT sending x-amz-checksum-* — B2 S3-compatible API rejects it
       }
     });
 
