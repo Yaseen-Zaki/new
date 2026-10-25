@@ -46,12 +46,14 @@ public class MainActivity extends Activity {
     private String selectedFolder = null;
     private ScanTask currentScan = null;
     private StringBuilder scanOutput = new StringBuilder();
+    private UploadDatabase db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         loadPreferences();
+        db = new UploadDatabase(this);
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -130,6 +132,12 @@ public class MainActivity extends Activity {
         render();
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (db != null) db.close();
+    }
+
     private void onStartClicked() {
         if (selectedFolder == null) {
             lastError = "Choose a folder before starting.";
@@ -144,7 +152,7 @@ public class MainActivity extends Activity {
         scanOutput.setLength(0);
         scanOutput.append(getString(R.string.scan_started));
         render();
-        currentScan = new ScanTask(this, selectedFolder);
+        currentScan = new ScanTask(this, db, selectedFolder);
         currentScan.execute();
     }
 
@@ -276,10 +284,12 @@ public class MainActivity extends Activity {
     @SuppressWarnings("deprecation")
     private static class ScanTask extends AsyncTask<Void, Void, ScanResult> {
         private final WeakReference<MainActivity> activityRef;
+        private final UploadDatabase db;
         private final String folderPath;
 
-        ScanTask(MainActivity activity, String folderPath) {
+        ScanTask(MainActivity activity, UploadDatabase db, String folderPath) {
             this.activityRef = new WeakReference<MainActivity>(activity);
+            this.db = db;
             this.folderPath = folderPath;
         }
 
@@ -298,12 +308,21 @@ public class MainActivity extends Activity {
             }
             List<String> names = new ArrayList<String>();
             int total = 0;
+            int newlyDiscovered = 0;
+            int seenAgain = 0;
+            int modified = 0;
+            int skipped = 0;
             for (File c : children) {
                 if (!c.isFile()) continue;
                 if (!FolderBrowser.isImage(c.getName())) continue;
                 long size = c.length();
                 if (size <= 0) continue;
                 total++;
+                int r = db.recordFile(c);
+                if (r == 0) newlyDiscovered++;
+                else if (r == 1) seenAgain++;
+                else if (r == 2) modified++;
+                else skipped++;
                 if (names.size() < MAX_NAMES_SHOWN) {
                     names.add(c.getName() + "  (" + size + " B)");
                 }
@@ -311,6 +330,10 @@ public class MainActivity extends Activity {
             Collections.sort(names);
             result.total = total;
             result.shown = names;
+            result.newlyDiscovered = newlyDiscovered;
+            result.seenAgain = seenAgain;
+            result.modified = modified;
+            result.skippedUnreadable = skipped;
             return result;
         }
 
@@ -326,6 +349,10 @@ public class MainActivity extends Activity {
         int total;
         List<String> shown;
         String error;
+        int newlyDiscovered;
+        int seenAgain;
+        int modified;
+        int skippedUnreadable;
     }
 
     // Called from ScanTask.onPostExecute via WeakReference. Runs on the UI thread.
@@ -340,6 +367,9 @@ public class MainActivity extends Activity {
             scanOutput.setLength(0);
             scanOutput.append(getResources().getQuantityString(
                     R.plurals.scan_result, result.total, result.total, result.shown.size()))
+                    .append("\n");
+            scanOutput.append(getString(R.string.scan_db_summary,
+                    result.newlyDiscovered, result.seenAgain, result.modified, result.skippedUnreadable))
                     .append("\n\n");
             for (String name : result.shown) {
                 scanOutput.append(name).append("\n");

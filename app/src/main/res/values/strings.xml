@@ -29,4 +29,5 @@
     </plurals>
     <string name="scan_failed">Scan failed: %1$s</string>
     <string name="folder_unavailable">Saved folder is no longer readable: %1$s</string>
+    <string name="scan_db_summary">Database: new=%1$d, again=%2$d, modified=%3$d, skipped=%4$d</string>
 </resources>
