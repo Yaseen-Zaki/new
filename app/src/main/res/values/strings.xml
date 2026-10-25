@@ -22,4 +22,11 @@
         <item quantity="one">%1$d image here</item>
         <item quantity="other">%1$d images here</item>
     </plurals>
+    <string name="scan_started">Scanning…</string>
+    <plurals name="scan_result">
+        <item quantity="one">Scan complete: %1$d image found, %2$d shown below.</item>
+        <item quantity="other">Scan complete: %1$d images found, %2$d shown below.</item>
+    </plurals>
+    <string name="scan_failed">Scan failed: %1$s</string>
+    <string name="folder_unavailable">Saved folder is no longer readable: %1$s</string>
 </resources>

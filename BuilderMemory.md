@@ -191,15 +191,22 @@ Unchanged.
 - [x] Lint: `0 errors, 0 warnings`
 - [x] Verified on Fondi Android 4.4 tablet: navigation, parent, counts, Use, Cancel
 
-### 2c Persistence and scanning — NOT STARTED
-- [ ] Persist folder reference (`SharedPreferences`)
-- [ ] Handle permissions / unavailable folders on launch
-- [ ] Scan for supported images (`.jpg` / `.jpeg` / `.png`)
-- [ ] Skip incomplete files (zero-byte or still-being-written)
-- [ ] Avoid duplicate queue entries on rescan
-- [ ] Handle large folders
+### 2c Persistence and first scan — COMPLETED (verified on Fondi tablet)
+- [x] `SharedPreferences` (`fondi_prefs`): `selected_folder`, `last_scan_total`, `last_scan_time`
+- [x] On launch: restore folder if readable; otherwise clear pref and show `folder_unavailable`
+- [x] Start button runs a non-recursive `ScanTask` over `*.jpg` / `*.jpeg` / `*.png`
+- [x] Zero-byte and unreadable files skipped
+- [x] Display cap: first 50 filenames with sizes; full count recorded in prefs
+- [x] Status transitions `Stopped -> Scanning -> Stopped`; result text in the scroll area
+- [x] `scan_started` shown immediately when scan begins
+- [x] `ScanTask` is `static` with `WeakReference<MainActivity>` (no Activity leak)
+- [x] Plural resource `scan_result` used via `getQuantityString`
+- [x] Lint: `0 errors, 0 warnings`
+- [x] Verified on Fondi Android 4.4 tablet: persistence across force-stop and reboot,
+      scan counts, empty folder, renamed-folder recovery, rotate-during-scan safety
 
-**Phase 2 acceptance:** Partially met. Folder selection works on the tablet. Persistence and scanning are NOT STARTED.
+**Phase 2 acceptance:** Met for 2a + 2b + 2c. Queue-level deduplication is deferred to
+Phase 3, where SQLite provides stable local identity across rescans.
 
 ## PHASE 3 — LOCAL DATABASE AND UPLOAD QUEUE
 
@@ -358,7 +365,7 @@ Never add `If-None-Match` or `x-amz-checksum-*` to B2 requests to "fix" a race o
 
 # PART 9 — CURRENT PROGRESS SUMMARY
 
-**Current overall phase:** Phase 0 complete; Phase 1 (main screen) complete; Phase 2a/2b complete on device; Phase 4B backend upload+auth verified. Phase 2c, 3, 5, 6, 7 NOT STARTED. **Commit policy:** human runs commits.
+**Current overall phase:** Phase 0 complete; Phase 1 (main screen) complete; Phase 2a/2b/2c complete on device; Phase 4B backend upload+auth verified. Phase 3, 5, 6, 7 NOT STARTED. **Commit policy:** human runs commits.
 
 **Verified facts (with evidence):**
 
@@ -469,3 +476,49 @@ Unchanged format. Record: component, status, files, commands, test, actual resul
 **Lint fixes folded in:** `DefaultLocale`, `SdCardPath`, `PluralsCandidate`.
 
 **Next step:** Phase 2c — persist folder with `SharedPreferences` and implement the first scan.
+
+---
+
+**Component:** Phase 2c — Persistence and first scan
+**Status:** COMPLETED (verified on Fondi Android 4.4 tablet)
+**Files changed:**
+- `app/src/main/java/com/fondi/photosync/MainActivity.java` (prefs load/save, static `ScanTask`, `finishScan()`)
+- `app/src/main/res/values/strings.xml` (`scan_started`, `scan_failed`, `folder_unavailable`, `scan_result` plural)
+
+**Commands:**
+- `./gradlew assembleDebug lintDebug`
+- `tail -5 app/build/reports/lint-results-debug.txt`
+
+**Tests (on device):**
+- Fresh install → `(none selected)`; choose folder; force-stop; relaunch → folder restored
+- Choose folder with photos → Start → `Scanning…` → `Scan complete: N image(s) found, M shown below.` + up to 50 names
+- Start again → same result
+- Choose different folder → Start → new count
+- Empty folder → `Scan complete: 0 image(s) found, 0 shown below.`
+- Rename folder externally → relaunch → `Saved folder is no longer readable: ...`; folder cleared
+- Choose folder again → recovered
+- Reboot tablet → folder persists
+- Rotate / leave app during scan → no crash, `WeakReference` returns null after activity destroyed
+
+**Actual results:** `BUILD SUCCESSFUL`; lint `0 errors, 0 warnings`; all tablet checks passed.
+
+**Design decisions recorded:**
+- `SharedPreferences` chosen over SQLite for Phase 2c — SQLite arrives in Phase 3 with the queue.
+- Non-recursive scan in 2c — recursion deferred pending Phase 3 architecture.
+- First 50 filenames kept in memory only, rest counted. Prevents OOM on large folders.
+- `AsyncTask` retained for the short scan; deprecated on API 30+ but present and correct on API 19. Suppression is documented in the code comment and does not silence any lint rule.
+- `ScanTask` is `static` + `WeakReference` so the Activity is collectable after rotation.
+
+**Lint issues fixed (not suppressed):**
+- `PluralsCandidate` — `scan_result_fmt` converted to `<plurals name="scan_result">`.
+- `StaticFieldLeak` — `ScanTask` made static, holding `WeakReference<MainActivity>`.
+- `UnusedResources` on `scan_started` — now used in `onStartClicked()`.
+
+**Known limitations:**
+- No SQLite queue yet — repeated scans recount the same files but do not enqueue anything.
+- No hashing (SHA-256 arrives with Phase 3 for local identity + server dedup).
+- No upload (Phase 5).
+- No auto-scan on launch or periodic scan (Phase 6).
+- No recursion.
+
+**Next step:** Phase 3 — SQLite schema and upload queue.

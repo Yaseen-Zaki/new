@@ -1,6 +1,8 @@
 package com.fondi.photosync;
 
 import android.app.Activity;
+import android.content.SharedPreferences;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -9,6 +11,10 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.lang.ref.WeakReference;
+import java.util.List;
 
 public class MainActivity extends Activity {
 
@@ -16,6 +22,12 @@ public class MainActivity extends Activity {
     private static final int STATE_SCANNING = 1;
     private static final int STATE_UPLOADING = 2;
     private static final int STATE_PAUSED = 3;
+
+    private static final String PREFS_NAME = "fondi_prefs";
+    private static final String KEY_FOLDER = "selected_folder";
+    private static final String KEY_SCAN_TOTAL = "last_scan_total";
+    private static final String KEY_SCAN_TIME = "last_scan_time";
+    private static final int MAX_NAMES_SHOWN = 50;
 
     private TextView statusView;
     private TextView countersView;
@@ -32,10 +44,14 @@ public class MainActivity extends Activity {
     private int failedCount = 0;
     private String lastError = null;
     private String selectedFolder = null;
+    private ScanTask currentScan = null;
+    private StringBuilder scanOutput = new StringBuilder();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        loadPreferences();
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -115,8 +131,21 @@ public class MainActivity extends Activity {
     }
 
     private void onStartClicked() {
+        if (selectedFolder == null) {
+            lastError = "Choose a folder before starting.";
+            render();
+            return;
+        }
+        if (currentScan != null) {
+            return;
+        }
         currentState = STATE_SCANNING;
+        lastError = null;
+        scanOutput.setLength(0);
+        scanOutput.append(getString(R.string.scan_started));
         render();
+        currentScan = new ScanTask(this, selectedFolder);
+        currentScan.execute();
     }
 
     private void onPauseClicked() {
@@ -157,6 +186,10 @@ public class MainActivity extends Activity {
             lastErrorView.setText(R.string.no_errors);
         } else {
             lastErrorView.setText(getString(R.string.last_error_fmt, lastError));
+        }
+
+        if (scanOutput.length() > 0) {
+            lastErrorView.setText(scanOutput.toString());
         }
     }
 
@@ -213,6 +246,110 @@ public class MainActivity extends Activity {
         }
         selectedFolder = dir.getAbsolutePath();
         lastError = null;
+        saveFolderPreference(selectedFolder);
+        render();
+    }
+
+    private void loadPreferences() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        String saved = prefs.getString(KEY_FOLDER, null);
+        if (saved == null || saved.length() == 0) {
+            return;
+        }
+        File dir = new File(saved);
+        if (dir.isDirectory() && dir.canRead()) {
+            selectedFolder = saved;
+        } else {
+            prefs.edit().remove(KEY_FOLDER).apply();
+            selectedFolder = null;
+            lastError = getString(R.string.folder_unavailable, saved);
+        }
+    }
+
+    private void saveFolderPreference(String path) {
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                .edit().putString(KEY_FOLDER, path).apply();
+    }
+
+    // AsyncTask is deprecated on API 30+, but present and correct on API 19.
+    // Static + WeakReference to avoid leaking the Activity.
+    @SuppressWarnings("deprecation")
+    private static class ScanTask extends AsyncTask<Void, Void, ScanResult> {
+        private final WeakReference<MainActivity> activityRef;
+        private final String folderPath;
+
+        ScanTask(MainActivity activity, String folderPath) {
+            this.activityRef = new WeakReference<MainActivity>(activity);
+            this.folderPath = folderPath;
+        }
+
+        @Override
+        protected ScanResult doInBackground(Void... params) {
+            ScanResult result = new ScanResult();
+            File dir = new File(folderPath);
+            if (!dir.isDirectory() || !dir.canRead()) {
+                result.error = "Folder is not readable: " + folderPath;
+                return result;
+            }
+            File[] children = dir.listFiles();
+            if (children == null) {
+                result.error = "Folder listing returned null.";
+                return result;
+            }
+            List<String> names = new ArrayList<String>();
+            int total = 0;
+            for (File c : children) {
+                if (!c.isFile()) continue;
+                if (!FolderBrowser.isImage(c.getName())) continue;
+                long size = c.length();
+                if (size <= 0) continue;
+                total++;
+                if (names.size() < MAX_NAMES_SHOWN) {
+                    names.add(c.getName() + "  (" + size + " B)");
+                }
+            }
+            Collections.sort(names);
+            result.total = total;
+            result.shown = names;
+            return result;
+        }
+
+        @Override
+        protected void onPostExecute(ScanResult result) {
+            MainActivity activity = activityRef.get();
+            if (activity == null) return;
+            activity.finishScan(result);
+        }
+    }
+
+    private static class ScanResult {
+        int total;
+        List<String> shown;
+        String error;
+    }
+
+    // Called from ScanTask.onPostExecute via WeakReference. Runs on the UI thread.
+    private void finishScan(ScanResult result) {
+        currentScan = null;
+        currentState = STATE_STOPPED;
+        if (result.error != null) {
+            lastError = getString(R.string.scan_failed, result.error);
+            scanOutput.setLength(0);
+        } else {
+            lastError = null;
+            scanOutput.setLength(0);
+            scanOutput.append(getResources().getQuantityString(
+                    R.plurals.scan_result, result.total, result.total, result.shown.size()))
+                    .append("\n\n");
+            for (String name : result.shown) {
+                scanOutput.append(name).append("\n");
+            }
+            getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                    .edit()
+                    .putInt(KEY_SCAN_TOTAL, result.total)
+                    .putLong(KEY_SCAN_TIME, System.currentTimeMillis())
+                    .apply();
+        }
         render();
     }
 }
