@@ -1,0 +1,16 @@
+name = "restless-fire-7680"
+main = "src/index.js"
+compatibility_date = "2026-10-25"
+
+[[durable_objects.bindings]]
+name = "UPLOAD_COORDINATOR"
+class_name = "UploadCoordinator"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["UploadCoordinator"]
+
+[vars]
+B2_ENDPOINT = "s3.us-east-005.backblazeb2.com"
+B2_BUCKET = "fondi-tablet-photosync"
+B2_REGION = "us-east-005"
