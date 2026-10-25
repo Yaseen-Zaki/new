@@ -156,23 +156,23 @@ Unchanged.
 ## PHASE 1 — BASIC ANDROID APPLICATION
 
 ### 1.1 Main screen
-- [x] Title, status view, primary action, scrollable output (currently an HTTPS test button — not the final Start/Pause/Stop UI)
-- [ ] Folder selection control
-- [ ] Start / Pause / Stop
-- [ ] Pending / success / failure counters
-- [ ] Upload progress
-- [ ] Last error view
+- [x] Title, status view, counters, last-error area
+- [x] Start / Pause / Stop buttons wired to local state
+- [x] All user-facing strings in `res/values/strings.xml`
+- [x] Folder selection control present but inert (Phase 2b)
+- [ ] Upload progress indicator
 
 ### 1.2 Application state
-- [ ] State model (Stopped / Scanning / Uploading / Paused / Waiting for network / Retrying / Error)
+- [x] State model (Stopped / Scanning / Uploading / Paused)
+- [ ] Waiting for network / Retrying / Error transitions (Phase 5)
 
 ### 1.3 Basic controls
-- [ ] Start
-- [ ] Pause
-- [ ] Stop
+- [x] Start (Stopped/Paused → Scanning)
+- [x] Pause (Scanning/Uploading → Paused)
+- [x] Stop (any → Stopped)
 - [ ] State restore on restart
 
-**Phase 1 acceptance:** Not met. Current UI is a network test screen only.
+**Phase 1 acceptance:** Partially met. Layout, controls, and state machine verified on Fondi Android 4.4 tablet. Folder selection, scanning, and upload logic still NOT STARTED (Phases 2, 3, 5).
 
 ---
 
@@ -407,3 +407,27 @@ Unchanged format. Record: component, status, files, commands, test, actual resul
 **Results:** `201` then `200 duplicate:true`; same key returned both times; object present in bucket
 **Limitations:** No rate limiting; no list/read endpoints; concurrency not yet exercised; token stored in APK will be extractable (documented trade-off)
 **Next step:** Phase 2 — Android folder selection and scanning (framework views, API 19).
+
+---
+
+**Component:** Phase 2a — Main screen layout and state machine
+**Status:** COMPLETED (verified on Fondi Android 4.4 tablet)
+**Files changed:**
+- `app/src/main/java/com/fondi/photosync/MainActivity.java` (framework views only)
+- `app/src/main/res/values/strings.xml` (new; all UI strings extracted)
+
+**Commands:**
+- `./gradlew assembleDebug lintDebug`
+- `tail -3 app/build/reports/lint-results-debug.txt`
+
+**Tests:** manual control verification on the tablet — Start/Pause/Stop transitions, button enable/disable per state.
+
+**Actual results:** `BUILD SUCCESSFUL`; lint `0 errors, 0 warnings`; tablet shows the expected labels and control behavior across Stopped/Scanning/Paused.
+
+**Known limitations:**
+- Folder selection is present but inert (Phase 2b).
+- No scanning, queue, hashing, or network logic.
+- Upload progress bar not yet added.
+- The `Waiting for network`, `Retrying`, and `Error` states are not represented in the UI until Phase 5; the three corresponding `strings.xml` entries were removed rather than suppressed, so lint stays clean.
+
+**Next step:** Phase 2b — in-app folder browser (API 19 has no `ACTION_OPEN_DOCUMENT_TREE`).
