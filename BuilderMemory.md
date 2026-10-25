@@ -210,13 +210,32 @@ Phase 3, where SQLite provides stable local identity across rescans.
 
 ## PHASE 3 — LOCAL DATABASE AND UPLOAD QUEUE
 
-- [ ] SQLite schema (path, filename, size, mtime, sha256, remote key, status, attempts, last error)
-- [ ] Queue state machine
-- [ ] Duplicate prevention by stable local identity + SHA-256
-- [ ] Crash recovery
-- [ ] Verify remote success before marking uploaded
+### 3a SQLite schema and inventory — COMPLETED (verified on Fondi tablet)
+- [x] `UploadDatabase` extends `SQLiteOpenHelper` (`fondi.db`, version 1)
+- [x] `photos` table: `_id`, `path`, `size`, `mtime`, `sha256` (NULL until Phase 5), `first_seen`, `last_seen`, `UNIQUE(path)`
+- [x] `queue` table: `_id`, `photo_id` (FK CASCADE), `status`, `attempts`, `last_attempt`, `last_error`, `remote_key`, `UNIQUE(photo_id)`
+- [x] Queue state constants: `DISCOVERED=0`, `PENDING=1`, `UPLOADING=2`, `UPLOADED=3`, `RETRY=4`, `FAILED=5`
+- [x] `recordFile(File)` classifies each scan hit as new / seen-again / modified / skipped
+- [x] Modified rows clear `sha256` so Phase 5 re-hashes them
+- [x] `ScanTask` calls `recordFile()` for every supported image; result counters shown on screen
+- [x] `countByStatus()`, `countPhotos()`, `firstQueuedPaths()` helpers for UI and diagnostics
+- [x] Lint: `0 errors, 0 warnings` (`PluralsCandidate` resolved by restructuring the summary string, not suppressed)
+- [x] Verified on Fondi Android 4.4 tablet: first scan = N new; second scan = N seen again; externally modified file = 1 modified; renamed file = 1 new; deleted file = not seen (row retained — see caveats); force-stop/relaunch persists
 
-**Phase 3 acceptance:** NOT STARTED.
+### 3b State transitions — NOT STARTED (Phase 5 territory)
+- [ ] `DISCOVERED -> PENDING` when upload manager picks up
+- [ ] `PENDING -> UPLOADING` before the network call
+- [ ] `UPLOADING -> UPLOADED` on server confirmation
+- [ ] `UPLOADING -> RETRY` on transient failure
+- [ ] `UPLOADING -> FAILED` on permanent failure
+- [ ] `RETRY -> PENDING` after backoff
+
+### 3c Duplicate prevention across rescans — PARTIAL
+- [x] Rescan never inserts a duplicate `photos` row (`UNIQUE(path)` + `recordFile` lookup)
+- [x] Rescan never inserts a duplicate `queue` row (`UNIQUE(photo_id)`)
+- [ ] Path-independent dedup by `sha256` — requires Phase 5 hashing
+
+**Phase 3 acceptance:** Schema, inventory, and duplicate prevention at the queue level are met. State-machine transitions and `sha256`-based identity are Phase 5 work and are NOT STARTED here.
 
 ---
 
@@ -365,7 +384,7 @@ Never add `If-None-Match` or `x-amz-checksum-*` to B2 requests to "fix" a race o
 
 # PART 9 — CURRENT PROGRESS SUMMARY
 
-**Current overall phase:** Phase 0 complete; Phase 1 (main screen) complete; Phase 2a/2b/2c complete on device; Phase 4B backend upload+auth verified. Phase 3, 5, 6, 7 NOT STARTED. **Commit policy:** human runs commits.
+**Current overall phase:** Phase 0 complete; Phase 1 (main screen) complete; Phase 2 (folder selection + scanning) complete; Phase 3a (SQLite inventory) complete; Phase 4B backend upload+auth verified; Phase 3b/5/6/7 NOT STARTED. **Commit policy:** human runs commits.
 
 **Verified facts (with evidence):**
 
@@ -522,3 +541,48 @@ Unchanged format. Record: component, status, files, commands, test, actual resul
 - No recursion.
 
 **Next step:** Phase 3 — SQLite schema and upload queue.
+
+---
+
+**Component:** Phase 3a — SQLite schema, inventory, and queue rows
+**Status:** COMPLETED (schema + inventory verified on Fondi tablet); state transitions NOT STARTED (Phase 5)
+**Files created:**
+- `app/src/main/java/com/fondi/photosync/UploadDatabase.java` (new, ~185 lines)
+
+**Files changed:**
+- `app/src/main/java/com/fondi/photosync/MainActivity.java` (`db` field, init in `onCreate`, close in `onDestroy`, `ScanTask` calls `recordFile`, `finishScan` shows DB summary)
+- `app/src/main/res/values/strings.xml` (`scan_db_summary`; `key=value` form to satisfy `PluralsCandidate` without suppression)
+
+**Commands:**
+- `./gradlew assembleDebug lintDebug`
+- `tail -3 app/build/reports/lint-results-debug.txt`
+
+**Tests (on device):**
+- First Start on folder with N photos -> `Database: new=N, again=0, modified=0, skipped=0`
+- Second Start, unchanged -> `Database: new=0, again=N, modified=0, skipped=0`
+- Externally modify one file, Start -> `Database: new=0, again=N-1, modified=1, skipped=0`
+- Rename one file externally, Start -> `Database: new=1, again=N-1, modified=0, skipped=0`
+- Delete one file externally, Start -> `Database: new=0, again=N-1, modified=0, skipped=0`
+- Force-stop, relaunch, Start -> persisted, same counts
+- Rotate during scan -> no crash
+
+**Actual results:** `BUILD SUCCESSFUL`; lint `0 errors, 0 warnings`; every tablet row behaved as expected.
+
+**Design decisions recorded:**
+- Two tables (`photos` + `queue`) instead of one, so retry bookkeeping does not mutate the photo record.
+- `UNIQUE(path)` on `photos` and `UNIQUE(photo_id)` on `queue` are the primary duplicate-prevention mechanisms at Phase 3.
+- `sha256` column exists but stays `NULL` until Phase 5. Modified files clear any existing value so Phase 5 re-hashes.
+- `recordFile()` return codes: `0=new`, `1=seen`, `2=modified`, `3=skipped` — avoids throwing across the scan loop.
+- `UploadDatabase` is instantiated in `MainActivity.onCreate`, closed in `onDestroy`. Not a singleton yet — if the Worker/Service (Phase 6) needs it, it becomes one then.
+- `scan_db_summary` uses `key=value` form (new=, again=, modified=, skipped=), not `%d <word>`, so `PluralsCandidate` does not fire. Restructuring the string was chosen over `tools:ignore` suppression.
+
+**Known limitations:**
+- Deleted files remain in `photos` until Phase 6 scan policy decides whether to remove them. **Not a bug.**
+- Renamed files produce a new `photos` row (`UNIQUE(path)` treats the new path as new). Deduplicating by `sha256` requires Phase 5 hashing. **Not a bug.**
+- `sha256` column is `NULL` for every row. Integrity verification is a Phase 5 concern.
+- Queue state stays `DISCOVERED` for every row. `PENDING`, `UPLOADING`, `UPLOADED`, `RETRY`, `FAILED` are defined as constants but nothing transitions into them yet.
+- No auto-scan on launch or periodic scan (Phase 6).
+- No UI to inspect the DB directly — only the summary line. A dedicated inspector is optional Phase 3b work if desired, but not required to proceed.
+- No database migration path yet (version 1 is the first schema). A future `onUpgrade` is expected when Phase 5 adds columns if needed.
+
+**Next step:** Phase 5 — Android networking and upload manager. This is the first phase that actually contacts the Worker and is the only place the `sha256` and queue-transition machinery will be exercised end to end. Phase 6 (background service) and Phase 7 (Samsung access) remain deferred.
