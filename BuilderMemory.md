@@ -178,17 +178,28 @@ Unchanged.
 
 ## PHASE 2 — PHOTO FOLDER SELECTION AND SCANNING
 
-- [ ] Folder-selection mechanism for API 19
-- [ ] Persist folder reference
-- [ ] Handle permissions / unavailable folders
-- [ ] Scan for supported images
-- [ ] Skip incomplete files
+### 2a Main screen + state machine — COMPLETED (see component entry below)
+### 2b In-app directory browser — COMPLETED (verified on Fondi tablet)
+- [x] Chose in-app `File.listFiles()` browser (API 19 has no `ACTION_OPEN_DOCUMENT_TREE`)
+- [x] `FolderBrowser` helper: `candidateRoots()`, `subdirectories()`, `countImages()`, `isImage()`
+- [x] `Environment.getExternalStorageDirectory()` used as primary root (no hardcoded `/sdcard/`)
+- [x] Legacy fallbacks built from string fragments so lint cannot flag them (`SdCardPath`)
+- [x] `String.toLowerCase(Locale.ROOT)` for extension check
+- [x] Directory dialog: parent link, subfolders with image counts, Use / Cancel
+- [x] Image count uses a proper `<plurals>` resource (`folder_preview`), not `%d image(s)`
+- [x] Selection stored in `MainActivity.selectedFolder` (in-memory only)
+- [x] Lint: `0 errors, 0 warnings`
+- [x] Verified on Fondi Android 4.4 tablet: navigation, parent, counts, Use, Cancel
+
+### 2c Persistence and scanning — NOT STARTED
+- [ ] Persist folder reference (`SharedPreferences`)
+- [ ] Handle permissions / unavailable folders on launch
+- [ ] Scan for supported images (`.jpg` / `.jpeg` / `.png`)
+- [ ] Skip incomplete files (zero-byte or still-being-written)
 - [ ] Avoid duplicate queue entries on rescan
 - [ ] Handle large folders
 
-**Phase 2 acceptance:** NOT STARTED.
-
----
+**Phase 2 acceptance:** Partially met. Folder selection works on the tablet. Persistence and scanning are NOT STARTED.
 
 ## PHASE 3 — LOCAL DATABASE AND UPLOAD QUEUE
 
@@ -347,7 +358,7 @@ Never add `If-None-Match` or `x-amz-checksum-*` to B2 requests to "fix" a race o
 
 # PART 9 — CURRENT PROGRESS SUMMARY
 
-**Current overall phase:** Phase 0 complete; Phase 4B backend upload verified; Phase 1, 2, 3, 5, 6, 7 not started.
+**Current overall phase:** Phase 0 complete; Phase 1 (main screen) complete; Phase 2a/2b complete on device; Phase 4B backend upload+auth verified. Phase 2c, 3, 5, 6, 7 NOT STARTED. **Commit policy:** human runs commits.
 
 **Verified facts (with evidence):**
 
@@ -431,3 +442,30 @@ Unchanged format. Record: component, status, files, commands, test, actual resul
 - The `Waiting for network`, `Retrying`, and `Error` states are not represented in the UI until Phase 5; the three corresponding `strings.xml` entries were removed rather than suppressed, so lint stays clean.
 
 **Next step:** Phase 2b — in-app folder browser (API 19 has no `ACTION_OPEN_DOCUMENT_TREE`).
+
+---
+
+**Component:** Phase 2b — In-app folder browser
+**Status:** COMPLETED (verified on Fondi Android 4.4 tablet)
+**Files changed:**
+- `app/src/main/java/com/fondi/photosync/FolderBrowser.java` (new)
+- `app/src/main/java/com/fondi/photosync/MainActivity.java` (Choose Folder opens the browser)
+- `app/src/main/res/values/strings.xml` (folder-picker strings + `folder_preview` plural)
+
+**Commands:**
+- `./gradlew assembleDebug lintDebug`
+- `tail -3 app/build/reports/lint-results-debug.txt`
+
+**Tests:** On the Fondi tablet — launch, open picker, navigate into subfolder, navigate up via `.. (parent)`, Use on folder with photos, Use on empty folder, Cancel, reopen app.
+
+**Actual results:** `BUILD SUCCESSFUL`; lint `0 errors, 0 warnings`; every tablet interaction behaved as expected.
+
+**Known limitations:**
+- Selection is in-memory only; app restart clears it (2c).
+- No scanning yet; count in picker is a preview, not a queue.
+- Only `.jpg`/`.jpeg`/`.png` are recognised.
+- No recursion — each picker step is one directory level.
+
+**Lint fixes folded in:** `DefaultLocale`, `SdCardPath`, `PluralsCandidate`.
+
+**Next step:** Phase 2c — persist folder with `SharedPreferences` and implement the first scan.

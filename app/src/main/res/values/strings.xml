@@ -14,4 +14,12 @@
     <string name="button_stop">Stop</string>
     <string name="no_errors">(no errors)</string>
     <string name="last_error_fmt">Last error: %1$s</string>
+    <string name="folder_pick_title">Choose photo folder</string>
+    <string name="folder_pick_up">.. (parent)</string>
+    <string name="folder_pick_use">Use this folder</string>
+    <string name="folder_pick_cancel">Cancel</string>
+    <plurals name="folder_preview">
+        <item quantity="one">%1$d image here</item>
+        <item quantity="other">%1$d images here</item>
+    </plurals>
 </resources>
