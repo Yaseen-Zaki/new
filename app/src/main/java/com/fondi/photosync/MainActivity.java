@@ -67,6 +67,7 @@ public class MainActivity extends Activity {
 
         loadPreferences();
         db = new UploadDatabase(this);
+        db.resetUploadingToPending();
         showTokenDialogIfMissing();
 
         LinearLayout root = new LinearLayout(this);

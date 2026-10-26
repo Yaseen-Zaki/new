@@ -326,4 +326,19 @@ public class UploadDatabase extends SQLiteOpenHelper {
                 new Object[]{STATUS_FAILED, message, queueId});
     }
 
+    /**
+     * Resets any rows stuck in UPLOADING back to PENDING. Called once at
+     * app startup. Safe because re-upload is idempotent at the Worker: the
+     * Durable Object keyed by sha256 returns 200 duplicate:true for content
+     * that already exists, so a stuck row that was actually uploaded does not
+     * create a duplicate object.
+     */
+    public synchronized int resetUploadingToPending() {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues v = new ContentValues();
+        v.put(COL_STATUS, STATUS_PENDING);
+        return db.update(TABLE_QUEUE, v,
+                COL_STATUS + "=?", new String[]{String.valueOf(STATUS_UPLOADING)});
+    }
+
 }
