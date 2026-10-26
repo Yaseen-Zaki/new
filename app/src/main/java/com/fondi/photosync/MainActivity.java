@@ -188,6 +188,7 @@ public class MainActivity extends Activity {
         scanOutput.setLength(0);
         scanOutput.append(getString(R.string.scan_started));
         render();
+        SyncScheduler.enable(this);
         currentScan = new ScanTask(this, db, selectedFolder);
         currentScan.execute();
     }
@@ -215,6 +216,7 @@ public class MainActivity extends Activity {
 
     private void onStopClicked() {
         uploadStopped = true;
+        SyncScheduler.disable(this);
         currentState = STATE_STOPPED;
         render();
     }

@@ -21,6 +21,10 @@
             </intent-filter>
         </activity>
 
+        <receiver
+            android:name=".SyncAlarmReceiver"
+            android:exported="false" />
+
     </application>
 
 </manifest>
