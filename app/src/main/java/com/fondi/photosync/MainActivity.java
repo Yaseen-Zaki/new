@@ -337,7 +337,7 @@ public class MainActivity extends Activity {
     // AsyncTask is deprecated on API 30+, but present and correct on API 19.
     // Static + WeakReference to avoid leaking the Activity.
     @SuppressWarnings("deprecation")
-    private static class ScanTask extends AsyncTask<Void, Void, ScanResult> {
+    private static class ScanTask extends AsyncTask<Void, Void, PhotoScanner.Result> {
         private final WeakReference<MainActivity> activityRef;
         private final UploadDatabase db;
         private final String folderPath;
@@ -349,69 +349,22 @@ public class MainActivity extends Activity {
         }
 
         @Override
-        protected ScanResult doInBackground(Void... params) {
-            ScanResult result = new ScanResult();
-            File dir = new File(folderPath);
-            if (!dir.isDirectory() || !dir.canRead()) {
-                result.error = "Folder is not readable: " + folderPath;
-                return result;
-            }
-            File[] children = dir.listFiles();
-            if (children == null) {
-                result.error = "Folder listing returned null.";
-                return result;
-            }
-            List<String> names = new ArrayList<String>();
-            int total = 0;
-            int newlyDiscovered = 0;
-            int seenAgain = 0;
-            int modified = 0;
-            int skipped = 0;
-            for (File c : children) {
-                if (!c.isFile()) continue;
-                if (!FolderBrowser.isImage(c.getName())) continue;
-                long size = c.length();
-                if (size <= 0) continue;
-                total++;
-                int r = db.recordFile(c);
-                if (r == 0) newlyDiscovered++;
-                else if (r == 1) seenAgain++;
-                else if (r == 2) modified++;
-                else skipped++;
-                if (names.size() < MAX_NAMES_SHOWN) {
-                    names.add(c.getName() + "  (" + size + " B)");
-                }
-            }
-            Collections.sort(names);
-            result.total = total;
-            result.shown = names;
-            result.newlyDiscovered = newlyDiscovered;
-            result.seenAgain = seenAgain;
-            result.modified = modified;
-            result.skippedUnreadable = skipped;
-            return result;
+        protected PhotoScanner.Result doInBackground(Void... params) {
+            PhotoScanner scanner = new PhotoScanner(db, MAX_NAMES_SHOWN);
+            return scanner.scan(folderPath, null);
         }
 
         @Override
-        protected void onPostExecute(ScanResult result) {
+        protected void onPostExecute(PhotoScanner.Result result) {
             MainActivity activity = activityRef.get();
             if (activity == null) return;
-            activity.finishScan(result);
+            activity.finishScanFromScanner(result);
         }
     }
 
-    private static class ScanResult {
-        int total;
-        List<String> shown;
-        String error;
-        int newlyDiscovered;
-        int seenAgain;
-        int modified;
-        int skippedUnreadable;
-    }
 
     // Called from ScanTask.onPostExecute via WeakReference. Runs on the UI thread.
-    private void finishScan(ScanResult result) {
+    private void finishScanFromScanner(PhotoScanner.Result result) {
         currentScan = null;
         currentState = STATE_STOPPED;
         if (result.error != null) {
@@ -421,12 +374,12 @@ public class MainActivity extends Activity {
             lastError = null;
             scanOutput.setLength(0);
             scanOutput.append(getResources().getQuantityString(
-                    R.plurals.scan_result, result.total, result.total, result.shown.size()))
+                    R.plurals.scan_result, result.total, result.total, result.shownNames.size()))
                     .append("\n");
             scanOutput.append(getString(R.string.scan_db_summary,
                     result.newlyDiscovered, result.seenAgain, result.modified, result.skippedUnreadable))
                     .append("\n\n");
-            for (String name : result.shown) {
+            for (String name : result.shownNames) {
                 scanOutput.append(name).append("\n");
             }
             getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -704,6 +657,10 @@ public class MainActivity extends Activity {
         if (!isResume) {
             db.promoteDiscoveredToPending();
         }
+        // 6C: promote RETRY rows whose backoff has expired. Runs for both
+        // fresh Start and Resume so resumed sessions also pick up eligible
+        // retries that became ready while the user was paused.
+        db.promoteDueRetries();
         int pending = db.countPending();
         if (pending == 0) {
             // Nothing to do — stay in Stopped and leave the scan output visible.
@@ -757,12 +714,10 @@ public class MainActivity extends Activity {
     }
 
     @SuppressWarnings("deprecation")
-    private static class UploadTask extends AsyncTask<Void, int[], int[]> {
-        // Result: [uploadedCount, failedCount, stoppedByUser(0/1)]
+    private static class UploadTask extends AsyncTask<Void, int[], PhotoUploader.Result> {
         private final WeakReference<MainActivity> activityRef;
         private final UploadDatabase db;
         private final String token;
-        private String lastFailure;
 
         UploadTask(MainActivity activity, UploadDatabase db, String token) {
             this.activityRef = new WeakReference<MainActivity>(activity);
@@ -771,45 +726,19 @@ public class MainActivity extends Activity {
         }
 
         @Override
-        protected int[] doInBackground(Void... params) {
-            int done = 0;
-            int total = db.countPending();
-            int failed = 0;
-            while (true) {
-                MainActivity activity = activityRef.get();
-                if (activity == null) break;
-                if (activity.uploadStopped || activity.uploadPaused) break;
-
-                UploadDatabase.QueueItem item = db.takeNextPending();
-                if (item == null) break;
-                if (!db.markUploading(item.queueId)) continue;
-
-                java.io.File f = new java.io.File(item.path);
-                HttpUploader.Result r = HttpUploader.upload(token, f);
-                if (r.ok) {
-                    db.markUploaded(item.queueId, r.serverId == null ? "" : r.serverId);
-                    done++;
-                } else if (r.retryable) {
-                    db.markRetry(item.queueId, r.error);
-                    failed++;
-                    lastFailure = "Retry: " + r.error;
-                    // Stop the loop on the first network failure — user must press Start again.
-                    break;
-                } else {
-                    db.markFailed(item.queueId, r.error);
-                    failed++;
-                    lastFailure = "Failed: " + r.error;
-                    break;
+        protected PhotoUploader.Result doInBackground(Void... params) {
+            PhotoUploader uploader = new PhotoUploader(db, token);
+            return uploader.run(new PhotoUploader.StopCheck() {
+                @Override public boolean shouldStop() {
+                    MainActivity a = activityRef.get();
+                    return a == null || a.uploadStopped || a.uploadPaused;
                 }
-                publishProgress(new int[]{done, total});
-            }
-            MainActivity activity = activityRef.get();
-            boolean stoppedByUser = activity != null && (activity.uploadStopped || activity.uploadPaused);
-            MainActivity act = activityRef.get();
-            boolean wasPaused = act != null && act.uploadPaused;
-            boolean wasStopped = act != null && act.uploadStopped;
-            // return: [done, failed, stoppedByUserFlag, pausedFlag]
-            return new int[]{done, failed, (wasStopped ? 1 : 0), (wasPaused ? 1 : 0)};
+            }, new PhotoUploader.Listener() {
+                @Override public void onUploadProgress(int done, int total) {
+                    publishProgress(new int[]{done, total});
+                }
+                @Override public void onUploadDone(PhotoUploader.Result r) { /* handled in onPostExecute */ }
+            });
         }
 
         @Override
@@ -821,13 +750,12 @@ public class MainActivity extends Activity {
         }
 
         @Override
-        protected void onPostExecute(int[] result) {
+        protected void onPostExecute(PhotoUploader.Result r) {
             MainActivity activity = activityRef.get();
             if (activity == null) return;
-            activity.onUploadDone(result[0], result[1],
-                    result.length > 2 && result[2] == 1,
-                    result.length > 3 && result[3] == 1,
-                    lastFailure);
+            boolean paused = activity.uploadPaused;
+            boolean stopped = activity.uploadStopped;
+            activity.onUploadDone(r.uploaded, r.failed, stopped, paused, r.lastFailure);
         }
     }
 

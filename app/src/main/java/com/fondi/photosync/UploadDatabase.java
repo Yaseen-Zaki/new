@@ -341,4 +341,57 @@ public class UploadDatabase extends SQLiteOpenHelper {
                 COL_STATUS + "=?", new String[]{String.valueOf(STATUS_UPLOADING)});
     }
 
+    // Backoff delays (milliseconds) by attempt count. attempts 1 -> 60s,
+    // 2 -> 5min, 3 -> 30min, 4 -> 2h, 5+ -> 24h cap.
+    private static final long[] BACKOFF_MS = new long[]{
+            60L * 1000L,
+            5L * 60L * 1000L,
+            30L * 60L * 1000L,
+            2L * 60L * 60L * 1000L,
+            24L * 60L * 60L * 1000L
+    };
+
+    /** Exposed for the debug override path in MainActivity. */
+    public static long backoffMillisForAttempts(int attempts) {
+        if (attempts < 1) return BACKOFF_MS[0];
+        if (attempts > BACKOFF_MS.length) return BACKOFF_MS[BACKOFF_MS.length - 1];
+        return BACKOFF_MS[attempts - 1];
+    }
+
+    /**
+     * Promotes RETRY rows whose backoff has expired back to PENDING.
+     * A row qualifies when last_attempt is NULL or (now - last_attempt) >=
+     * backoff(attempts). Uses the attempts and last_attempt columns that
+     * already exist; no schema change.
+     */
+    public synchronized int promoteDueRetries() {
+        SQLiteDatabase db = getWritableDatabase();
+        long now = System.currentTimeMillis();
+        Cursor c = null;
+        int promoted = 0;
+        try {
+            c = db.query(TABLE_QUEUE,
+                    new String[]{COL_ID, COL_ATTEMPTS, COL_LAST_ATTEMPT},
+                    COL_STATUS + "=?",
+                    new String[]{String.valueOf(STATUS_RETRY)},
+                    null, null, null);
+            while (c.moveToNext()) {
+                long id = c.getLong(0);
+                int attempts = c.getInt(1);
+                long lastAttempt = c.isNull(2) ? 0L : c.getLong(2);
+                long delay = backoffMillisForAttempts(attempts);
+                if (lastAttempt == 0L || (now - lastAttempt) >= delay) {
+                    ContentValues v = new ContentValues();
+                    v.put(COL_STATUS, STATUS_PENDING);
+                    int n = db.update(TABLE_QUEUE, v, COL_ID + "=?",
+                            new String[]{String.valueOf(id)});
+                    if (n > 0) promoted++;
+                }
+            }
+        } finally {
+            if (c != null) c.close();
+        }
+        return promoted;
+    }
+
 }
