@@ -30,4 +30,24 @@
     <string name="scan_failed">Scan failed: %1$s</string>
     <string name="folder_unavailable">Saved folder is no longer readable: %1$s</string>
     <string name="scan_db_summary">Database: new=%1$d, again=%2$d, modified=%3$d, skipped=%4$d</string>
+    <string name="button_set_token">Set token</string>
+    <string name="button_check_token">Check token</string>
+    <string name="token_dialog_title">Worker token</string>
+    <string name="token_dialog_message">Paste the APP_TOKEN you set in Cloudflare. Stored on this device only.</string>
+    <string name="token_dialog_save">Save</string>
+    <string name="token_dialog_cancel">Cancel</string>
+    <string name="token_hint">APP_TOKEN</string>
+    <string name="token_missing">No token set. Tap Set token first.</string>
+    <string name="token_saved">Token saved.</string>
+    <string name="token_rejected">Token rejected. (HTTP 401)</string>
+    <string name="token_accepted">Token accepted. (No upload was attempted.)</string>
+    <string name="token_check_net_error">Connection failed: %1$s</string>
+    <string name="token_check_unexpected">Unexpected response: HTTP %1$d %2$s</string>
+    <string name="button_send_one_photo">Send one photo…</string>
+    <string name="send_one_no_folder">Choose a folder first.</string>
+    <string name="send_one_no_photos">No JPEG/PNG files in the selected folder.</string>
+    <string name="send_one_pick_title">Pick a photo to send</string>
+    <string name="send_one_uploading">Uploading %1$s…</string>
+    <string name="send_one_result">HTTP %1$d\n%2$s</string>
+    <string name="send_one_failed_pre">Could not upload: %1$s</string>
 </resources>

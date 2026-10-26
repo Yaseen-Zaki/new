@@ -14,6 +14,13 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.lang.ref.WeakReference;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.List;
 
 public class MainActivity extends Activity {
@@ -27,6 +34,8 @@ public class MainActivity extends Activity {
     private static final String KEY_FOLDER = "selected_folder";
     private static final String KEY_SCAN_TOTAL = "last_scan_total";
     private static final String KEY_SCAN_TIME = "last_scan_time";
+    private static final String KEY_TOKEN = "worker_token";
+    private static final String WORKER_UPLOAD_URL = "https://restless-fire-7680.yaseenzaki99.workers.dev/upload";
     private static final int MAX_NAMES_SHOWN = 50;
 
     private TextView statusView;
@@ -37,6 +46,9 @@ public class MainActivity extends Activity {
     private Button pauseButton;
     private Button stopButton;
     private Button chooseFolderButton;
+    private Button setTokenButton;
+    private Button checkTokenButton;
+    private Button sendOnePhotoButton;
 
     private int currentState = STATE_STOPPED;
     private int pendingCount = 0;
@@ -46,6 +58,7 @@ public class MainActivity extends Activity {
     private String selectedFolder = null;
     private ScanTask currentScan = null;
     private StringBuilder scanOutput = new StringBuilder();
+    private CheckTokenTask currentCheckTask;
     private UploadDatabase db;
 
     @Override
@@ -54,6 +67,7 @@ public class MainActivity extends Activity {
 
         loadPreferences();
         db = new UploadDatabase(this);
+        showTokenDialogIfMissing();
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -88,6 +102,27 @@ public class MainActivity extends Activity {
             }
         });
         root.addView(chooseFolderButton);
+
+        setTokenButton = new Button(this);
+        setTokenButton.setText(R.string.button_set_token);
+        setTokenButton.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { showTokenDialog(); }
+        });
+        root.addView(setTokenButton);
+
+        checkTokenButton = new Button(this);
+        checkTokenButton.setText(R.string.button_check_token);
+        checkTokenButton.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { onCheckTokenClicked(); }
+        });
+        root.addView(checkTokenButton);
+
+        sendOnePhotoButton = new Button(this);
+        sendOnePhotoButton.setText(R.string.button_send_one_photo);
+        sendOnePhotoButton.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { onSendOnePhotoClicked(); }
+        });
+        root.addView(sendOnePhotoButton);
 
         LinearLayout buttonRow = new LinearLayout(this);
         buttonRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -382,4 +417,249 @@ public class MainActivity extends Activity {
         }
         render();
     }
+
+    // -------- token helpers --------
+
+    private String getToken() {
+        return getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(KEY_TOKEN, null);
+    }
+
+    private void saveToken(String raw) {
+        String token = stripQuotesAndWhitespace(raw);
+        if (token.length() == 0) return;
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                .edit().putString(KEY_TOKEN, token).apply();
+    }
+
+    private static String stripQuotesAndWhitespace(String raw) {
+        if (raw == null) return "";
+        String v = raw.trim();
+        while (v.length() >= 2) {
+            char a = v.charAt(0);
+            char b = v.charAt(v.length() - 1);
+            if ((a == '"' && b == '"') || (a == '\'' && b == '\'')) {
+                v = v.substring(1, v.length() - 1).trim();
+            } else {
+                break;
+            }
+        }
+        return v;
+    }
+
+    private void showTokenDialog() {
+        final android.widget.EditText input = new android.widget.EditText(this);
+        input.setHint(R.string.token_hint);
+        String existing = getToken();
+        if (existing != null) input.setText(existing);
+        new android.app.AlertDialog.Builder(this)
+                .setTitle(R.string.token_dialog_title)
+                .setMessage(R.string.token_dialog_message)
+                .setView(input)
+                .setPositiveButton(R.string.token_dialog_save, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface d, int w) {
+                        String raw = input.getText() == null ? "" : input.getText().toString();
+                        saveToken(raw);
+                        lastError = getToken() == null ? getString(R.string.token_missing) : getString(R.string.token_saved);
+                        render();
+                    }
+                })
+                .setNegativeButton(R.string.token_dialog_cancel, null)
+                .show();
+    }
+
+    private void onCheckTokenClicked() {
+        String token = getToken();
+        if (token == null || token.length() == 0) {
+            lastError = getString(R.string.token_missing);
+            render();
+            return;
+        }
+        if (currentCheckTask != null) return;
+        lastError = null;
+        scanOutput.setLength(0);
+        scanOutput.append("Checking token…");
+        render();
+        currentCheckTask = new CheckTokenTask(this, token);
+        currentCheckTask.execute();
+    }
+
+    private void onCheckTokenDone(String message) {
+        currentCheckTask = null;
+        scanOutput.setLength(0);
+        lastError = null;
+        scanOutput.append(message);
+        render();
+    }
+
+    @SuppressWarnings("deprecation")
+    private static class CheckTokenTask extends AsyncTask<Void, Void, String> {
+        private final WeakReference<MainActivity> activityRef;
+        private final String token;
+        CheckTokenTask(MainActivity activity, String token) {
+            this.activityRef = new WeakReference<MainActivity>(activity);
+            this.token = token;
+        }
+        @Override
+        protected String doInBackground(Void... params) {
+            MainActivity act = activityRef.get();
+            if (act == null) return null;
+            HttpURLConnection conn = null;
+            try {
+                URL url = new URL(WORKER_UPLOAD_URL);
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(20000);
+                conn.setRequestMethod("POST");
+                conn.setDoOutput(true);
+                conn.setFixedLengthStreamingMode(0);
+                conn.setRequestProperty("Authorization", "Bearer " + token);
+                conn.setRequestProperty("Content-Length", "0");
+                OutputStream out = conn.getOutputStream();
+                out.flush();
+                out.close();
+                int code = conn.getResponseCode();
+                String body = readStream(code >= 200 && code < 400
+                        ? conn.getInputStream() : conn.getErrorStream());
+                if (code == 401) {
+                    return act.getString(R.string.token_rejected);
+                }
+                if (code == 400 && body.contains("bad_hash")) {
+                    return act.getString(R.string.token_accepted);
+                }
+                return act.getString(R.string.token_check_unexpected, code, body);
+            } catch (IOException e) {
+                return act.getString(R.string.token_check_net_error,
+                        e.getClass().getSimpleName() + ": " + e.getMessage());
+            } finally {
+                if (conn != null) conn.disconnect();
+            }
+        }
+        @Override
+        protected void onPostExecute(String message) {
+            MainActivity act = activityRef.get();
+            if (act == null || message == null) return;
+            act.onCheckTokenDone(message);
+        }
+        private static String readStream(InputStream in) throws IOException {
+            if (in == null) return "";
+            BufferedReader r = new BufferedReader(new InputStreamReader(in, "UTF-8"));
+            StringBuilder sb = new StringBuilder();
+            char[] buf = new char[1024];
+            int n;
+            try {
+                while ((n = r.read(buf)) != -1) {
+                    sb.append(buf, 0, n);
+                    if (sb.length() > 4096) break;
+                }
+            } finally {
+                try { r.close(); } catch (IOException ignored) {}
+            }
+            return sb.toString();
+        }
+    }
+
+    private void showTokenDialogIfMissing() {
+        String t = getToken();
+        if (t == null || t.length() == 0) showTokenDialog();
+    }
+
+    // ------------------------------------------------------------------
+    // Step 5B — send one specific photo (no DB, no queue)
+    // ------------------------------------------------------------------
+
+    private void onSendOnePhotoClicked() {
+        if (selectedFolder == null) {
+            lastError = getString(R.string.send_one_no_folder);
+            render();
+            return;
+        }
+        String token = getToken();
+        if (token == null || token.length() == 0) {
+            lastError = getString(R.string.token_missing);
+            render();
+            return;
+        }
+        File dir = new File(selectedFolder);
+        File[] children = dir.listFiles();
+        if (children == null) {
+            lastError = getString(R.string.send_one_no_photos);
+            render();
+            return;
+        }
+        final java.util.List<File> images = new java.util.ArrayList<File>();
+        final java.util.List<String> labels = new java.util.ArrayList<String>();
+        for (File f : children) {
+            if (!f.isFile()) continue;
+            if (!FolderBrowser.isImage(f.getName())) continue;
+            if (f.length() <= 0) continue;
+            images.add(f);
+            labels.add(f.getName() + "  (" + f.length() + " B)");
+        }
+        if (images.isEmpty()) {
+            lastError = getString(R.string.send_one_no_photos);
+            render();
+            return;
+        }
+        final String[] items = labels.toArray(new String[labels.size()]);
+        new android.app.AlertDialog.Builder(this)
+                .setTitle(R.string.send_one_pick_title)
+                .setItems(items, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface d, int which) {
+                        startSendOnePhoto(images.get(which));
+                    }
+                })
+                .setNegativeButton(R.string.token_dialog_cancel, null)
+                .show();
+    }
+
+    private void startSendOnePhoto(File file) {
+        if (currentSendOne != null) return;
+        String token = getToken();
+        if (token == null || token.length() == 0) return;
+        scanOutput.setLength(0);
+        scanOutput.append(getString(R.string.send_one_uploading, file.getName()));
+        lastError = null;
+        render();
+        currentSendOne = new SendOneTask(this, token, file);
+        currentSendOne.execute();
+    }
+
+    private void onSendOneDone(HttpUploader.Result result, String fileName) {
+        currentSendOne = null;
+        scanOutput.setLength(0);
+        if (result.error != null) {
+            lastError = getString(R.string.send_one_failed_pre, result.error);
+            render();
+            return;
+        }
+        lastError = null;
+        scanOutput.append("File: ").append(fileName).append("\n");
+        scanOutput.append(getString(R.string.send_one_result, result.httpCode, result.rawBody));
+        render();
+    }
+
+    private SendOneTask currentSendOne;
+
+    @SuppressWarnings("deprecation")
+    private static class SendOneTask extends AsyncTask<Void, Void, HttpUploader.Result> {
+        private final WeakReference<MainActivity> activityRef;
+        private final String token;
+        private final File file;
+        SendOneTask(MainActivity activity, String token, File file) {
+            this.activityRef = new WeakReference<MainActivity>(activity);
+            this.token = token;
+            this.file = file;
+        }
+        @Override
+        protected HttpUploader.Result doInBackground(Void... params) {
+            return HttpUploader.upload(token, file);
+        }
+        @Override
+        protected void onPostExecute(HttpUploader.Result r) {
+            MainActivity activity = activityRef.get();
+            if (activity == null) return;
+            activity.onSendOneDone(r, file.getName());
+        }
+    }
+
 }

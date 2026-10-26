@@ -11,3 +11,6 @@ captures/
 worker/.wrangler/
 worker/node_modules/
 deepseek_repo_context/
+
+# Local CA file (downloaded separately; not project source)
+isrgrootx1.pem
