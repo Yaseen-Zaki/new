@@ -30,6 +30,7 @@ public final class HttpUploader {
         public String rawBody = "";     // server's response body, truncated for display
         public String error;            // non-null only when httpCode == 0
         public boolean ok;              // true for 200 or 201
+        public boolean retryable;       // true for transient failures (5xx, IO, timeout)
         public boolean duplicate;       // value of "duplicate" when ok
         public String serverId;         // value of "id" when ok
     }
@@ -114,6 +115,7 @@ public final class HttpUploader {
                 r.rawBody = sb.toString();
             }
             r.ok = (code == 200 || code == 201);
+            r.retryable = (code >= 500) || (code == 0);
             if (r.ok) {
                 r.duplicate = jsonBool(r.rawBody, "duplicate");
                 r.serverId = jsonString(r.rawBody, "id");
@@ -121,6 +123,7 @@ public final class HttpUploader {
             return r;
         } catch (IOException e) {
             r.error = e.getClass().getSimpleName() + ": " + e.getMessage();
+            r.retryable = true;
             return r;
         } finally {
             if (reader != null) { try { reader.close(); } catch (IOException ignored) {} }

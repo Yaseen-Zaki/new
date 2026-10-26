@@ -133,7 +133,15 @@ public class UploadDatabase extends SQLiteOpenHelper {
                 }
                 db.update(TABLE_PHOTOS, update, COL_ID + "=?", new String[]{String.valueOf(id)});
 
-                return changed ? 2 : 1;
+                if (changed) {
+                    // Option A: re-promote the queue row so the modified file is uploaded again.
+                    long qid = queueIdForPhoto(id);
+                    if (qid > 0) {
+                        markPending(qid);
+                    }
+                    return 2;
+                }
+                return 1;
             }
 
             ContentValues insert = new ContentValues();
@@ -204,4 +212,118 @@ public class UploadDatabase extends SQLiteOpenHelper {
             if (c != null) c.close();
         }
     }
+
+    /** Moves every DISCOVERED row to PENDING. Returns row count updated. */
+    public synchronized int promoteDiscoveredToPending() {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues v = new ContentValues();
+        v.put(COL_STATUS, STATUS_PENDING);
+        return db.update(TABLE_QUEUE, v,
+                COL_STATUS + "=?", new String[]{String.valueOf(STATUS_DISCOVERED)});
+    }
+
+    /** Re-promotes a UPLOADED row for a modified file back to PENDING. Returns true if changed. */
+    public synchronized boolean markPending(long queueId) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues v = new ContentValues();
+        v.put(COL_STATUS, STATUS_PENDING);
+        v.putNull(COL_REMOTE_KEY);
+        v.putNull(COL_LAST_ERROR);
+        int n = db.update(TABLE_QUEUE, v, COL_ID + "=?", new String[]{String.valueOf(queueId)});
+        return n > 0;
+    }
+
+    /** Number of PENDING rows. */
+    public synchronized int countPending() {
+        return countByStatus(STATUS_PENDING);
+    }
+
+    /** Returns the queue row id for a given photo id, or -1 if none. */
+    public synchronized long queueIdForPhoto(long photoId) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = null;
+        try {
+            c = db.query(TABLE_QUEUE, new String[]{COL_ID},
+                    COL_PHOTO_ID + "=?", new String[]{String.valueOf(photoId)},
+                    null, null, null, "1");
+            if (c.moveToFirst()) return c.getLong(0);
+            return -1L;
+        } finally {
+            if (c != null) c.close();
+        }
+    }
+
+    /** One queue entry ready to upload. */
+    public static final class QueueItem {
+        public long queueId;
+        public long photoId;
+        public String path;
+    }
+
+    /** Fetches the first PENDING row as a QueueItem, or null if empty. */
+    public synchronized QueueItem takeNextPending() {
+        SQLiteDatabase db = getWritableDatabase();
+        Cursor c = null;
+        try {
+            c = db.rawQuery(
+                    "SELECT q." + COL_ID + ", p." + COL_ID + ", p." + COL_PATH +
+                    " FROM " + TABLE_QUEUE + " q JOIN " + TABLE_PHOTOS + " p " +
+                    "ON p." + COL_ID + " = q." + COL_PHOTO_ID +
+                    " WHERE q." + COL_STATUS + "=? ORDER BY q." + COL_ID + " ASC LIMIT 1",
+                    new String[]{String.valueOf(STATUS_PENDING)});
+            if (!c.moveToFirst()) return null;
+            QueueItem item = new QueueItem();
+            item.queueId = c.getLong(0);
+            item.photoId = c.getLong(1);
+            item.path = c.getString(2);
+            return item;
+        } finally {
+            if (c != null) c.close();
+        }
+    }
+
+    /** Marks a queue row UPLOADING only if it was PENDING. Returns true on successful transition. */
+    public synchronized boolean markUploading(long queueId) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues v = new ContentValues();
+        v.put(COL_STATUS, STATUS_UPLOADING);
+        v.put(COL_LAST_ATTEMPT, System.currentTimeMillis());
+        int n = db.update(TABLE_QUEUE, v,
+                COL_ID + "=? AND " + COL_STATUS + "=?",
+                new String[]{String.valueOf(queueId), String.valueOf(STATUS_PENDING)});
+        return n > 0;
+    }
+
+    /** Marks a row UPLOADED. Records the server id and clears the last error. */
+    public synchronized void markUploaded(long queueId, String remoteKey) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues v = new ContentValues();
+        v.put(COL_STATUS, STATUS_UPLOADED);
+        v.put(COL_REMOTE_KEY, remoteKey);
+        v.putNull(COL_LAST_ERROR);
+        db.update(TABLE_QUEUE, v, COL_ID + "=?", new String[]{String.valueOf(queueId)});
+    }
+
+    /** Marks a row RETRY, increments attempts, stores the error. */
+    public synchronized void markRetry(long queueId, String message) {
+        SQLiteDatabase db = getWritableDatabase();
+        db.execSQL(
+                "UPDATE " + TABLE_QUEUE + " SET " +
+                COL_STATUS + "=?, " +
+                COL_ATTEMPTS + "=" + COL_ATTEMPTS + "+1, " +
+                COL_LAST_ERROR + "=? WHERE " + COL_ID + "=?",
+                new Object[]{STATUS_RETRY, message, queueId});
+    }
+
+    /** Marks a row FAILED, increments attempts, stores the error. */
+    public synchronized void markFailed(long queueId, String message) {
+        SQLiteDatabase db = getWritableDatabase();
+        db.execSQL(
+                "UPDATE " + TABLE_QUEUE + " SET " +
+                COL_STATUS + "=?, " +
+                COL_ATTEMPTS + "=" + COL_ATTEMPTS + "+1, " +
+                COL_LAST_ERROR + "=? WHERE " + COL_ID + "=?",
+                new Object[]{STATUS_FAILED, message, queueId});
+    }
+
 }

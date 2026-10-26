@@ -193,12 +193,14 @@ public class MainActivity extends Activity {
 
     private void onPauseClicked() {
         if (currentState == STATE_SCANNING || currentState == STATE_UPLOADING) {
+            uploadPaused = true;
             currentState = STATE_PAUSED;
             render();
         }
     }
 
     private void onStopClicked() {
+        uploadStopped = true;
         currentState = STATE_STOPPED;
         render();
     }
@@ -416,6 +418,9 @@ public class MainActivity extends Activity {
                     .apply();
         }
         render();
+        if (result.error == null) {
+            startUploadLoop();
+        }
     }
 
     // -------- token helpers --------
@@ -639,6 +644,9 @@ public class MainActivity extends Activity {
     }
 
     private SendOneTask currentSendOne;
+    private UploadTask currentUpload;
+    private boolean uploadPaused;
+    private boolean uploadStopped;
 
     @SuppressWarnings("deprecation")
     private static class SendOneTask extends AsyncTask<Void, Void, HttpUploader.Result> {
@@ -659,6 +667,133 @@ public class MainActivity extends Activity {
             MainActivity activity = activityRef.get();
             if (activity == null) return;
             activity.onSendOneDone(r, file.getName());
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Upload loop (5C)
+    // ------------------------------------------------------------------
+
+    private void startUploadLoop() {
+        String token = getToken();
+        if (token == null || token.length() == 0) {
+            lastError = getString(R.string.token_missing);
+            render();
+            return;
+        }
+        if (currentUpload != null) return;
+
+        int promoted = db.promoteDiscoveredToPending();
+        int pending = db.countPending();
+        if (pending == 0) {
+            // Nothing to do — stay in Stopped and leave the scan output visible.
+            currentState = STATE_STOPPED;
+            render();
+            return;
+        }
+        uploadPaused = false;
+        uploadStopped = false;
+        currentState = STATE_UPLOADING;
+        pendingCount = pending;
+        render();
+        currentUpload = new UploadTask(this, db, token);
+        currentUpload.execute();
+    }
+
+    private void onUploadProgress(int done, int total) {
+        pendingCount = total - done;
+        uploadedCount = db.countByStatus(UploadDatabase.STATUS_UPLOADED);
+        failedCount = db.countByStatus(UploadDatabase.STATUS_FAILED);
+        if (currentState == STATE_UPLOADING) {
+            scanOutput.setLength(0);
+            scanOutput.append(getString(R.string.upload_progress_fmt, done, total));
+        }
+        render();
+    }
+
+    private void onUploadDone(int uploaded, int failed, boolean stoppedByUser, String lastFailure) {
+        currentUpload = null;
+        currentState = STATE_STOPPED;
+        pendingCount = db.countPending();
+        uploadedCount = db.countByStatus(UploadDatabase.STATUS_UPLOADED);
+        failedCount = db.countByStatus(UploadDatabase.STATUS_FAILED);
+        scanOutput.setLength(0);
+        if (stoppedByUser) {
+            scanOutput.append(getString(R.string.upload_stopped));
+        } else {
+            scanOutput.append(getString(R.string.upload_done_fmt, uploaded, failed));
+        }
+        if (lastFailure != null) {
+            scanOutput.append("\n").append(lastFailure);
+        }
+        render();
+    }
+
+    @SuppressWarnings("deprecation")
+    private static class UploadTask extends AsyncTask<Void, int[], int[]> {
+        // Result: [uploadedCount, failedCount, stoppedByUser(0/1)]
+        private final WeakReference<MainActivity> activityRef;
+        private final UploadDatabase db;
+        private final String token;
+        private String lastFailure;
+
+        UploadTask(MainActivity activity, UploadDatabase db, String token) {
+            this.activityRef = new WeakReference<MainActivity>(activity);
+            this.db = db;
+            this.token = token;
+        }
+
+        @Override
+        protected int[] doInBackground(Void... params) {
+            int done = 0;
+            int total = db.countPending();
+            int failed = 0;
+            while (true) {
+                MainActivity activity = activityRef.get();
+                if (activity == null) break;
+                if (activity.uploadStopped || activity.uploadPaused) break;
+
+                UploadDatabase.QueueItem item = db.takeNextPending();
+                if (item == null) break;
+                if (!db.markUploading(item.queueId)) continue;
+
+                java.io.File f = new java.io.File(item.path);
+                HttpUploader.Result r = HttpUploader.upload(token, f);
+                if (r.ok) {
+                    db.markUploaded(item.queueId, r.serverId == null ? "" : r.serverId);
+                    done++;
+                } else if (r.retryable) {
+                    db.markRetry(item.queueId, r.error);
+                    failed++;
+                    lastFailure = "Retry: " + r.error;
+                    // Stop the loop on the first network failure — user must press Start again.
+                    break;
+                } else {
+                    db.markFailed(item.queueId, r.error);
+                    failed++;
+                    lastFailure = "Failed: " + r.error;
+                    break;
+                }
+                publishProgress(new int[]{done, total});
+            }
+            MainActivity activity = activityRef.get();
+            boolean stoppedByUser = activity != null && (activity.uploadStopped || activity.uploadPaused);
+            return new int[]{done, failed, stoppedByUser ? 1 : 0};
+        }
+
+        @Override
+        protected void onProgressUpdate(int[]... values) {
+            MainActivity activity = activityRef.get();
+            if (activity == null) return;
+            int[] v = values[0];
+            activity.onUploadProgress(v[0], v[1]);
+        }
+
+        @Override
+        protected void onPostExecute(int[] result) {
+            MainActivity activity = activityRef.get();
+            if (activity == null) return;
+            activity.onUploadDone(result[0], result[1], result[2] == 1, lastFailure);
         }
     }
 

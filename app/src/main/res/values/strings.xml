@@ -50,4 +50,7 @@
     <string name="send_one_uploading">Uploading %1$s…</string>
     <string name="send_one_result">HTTP %1$d\n%2$s</string>
     <string name="send_one_failed_pre">Could not upload: %1$s</string>
+    <string name="upload_progress_fmt">Uploading %1$d / %2$d</string>
+    <string name="upload_done_fmt">Upload complete: uploaded=%1$d, failed=%2$d</string>
+    <string name="upload_stopped">Upload stopped.</string>
 </resources>
