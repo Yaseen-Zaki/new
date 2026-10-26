@@ -193,11 +193,24 @@ public class MainActivity extends Activity {
     }
 
     private void onPauseClicked() {
-        if (currentState == STATE_SCANNING || currentState == STATE_UPLOADING) {
+        if (currentState == STATE_UPLOADING && !uploadPaused) {
+            // Pause: takes effect at the next row boundary inside UploadTask.
             uploadPaused = true;
             currentState = STATE_PAUSED;
             render();
+            return;
         }
+        if (currentState == STATE_PAUSED) {
+            onResumeClicked();
+        }
+    }
+
+    private void onResumeClicked() {
+        if (!uploadPaused) return;
+        uploadPaused = false;
+        currentState = STATE_UPLOADING;
+        render();
+        startUploadLoop(true);
     }
 
     private void onStopClicked() {
@@ -224,8 +237,12 @@ public class MainActivity extends Activity {
             folderView.setText(getString(R.string.folder_fmt, selectedFolder));
         }
 
+        // Start is available when fully Stopped (fresh scan) or from Paused
+        // (abandon the paused batch and start over). While actively Uploading
+        // or Scanning it is disabled.
         startButton.setEnabled(currentState == STATE_STOPPED || currentState == STATE_PAUSED);
-        pauseButton.setEnabled(currentState == STATE_SCANNING || currentState == STATE_UPLOADING);
+        pauseButton.setEnabled(currentState == STATE_UPLOADING || currentState == STATE_PAUSED);
+        pauseButton.setText(currentState == STATE_PAUSED ? R.string.button_resume : R.string.button_pause);
         stopButton.setEnabled(currentState != STATE_STOPPED);
 
         if (lastError == null) {
@@ -420,7 +437,7 @@ public class MainActivity extends Activity {
         }
         render();
         if (result.error == null) {
-            startUploadLoop();
+            startUploadLoop(false);
         }
     }
 
@@ -675,7 +692,7 @@ public class MainActivity extends Activity {
     // Upload loop (5C)
     // ------------------------------------------------------------------
 
-    private void startUploadLoop() {
+    private void startUploadLoop(boolean isResume) {
         String token = getToken();
         if (token == null || token.length() == 0) {
             lastError = getString(R.string.token_missing);
@@ -684,7 +701,9 @@ public class MainActivity extends Activity {
         }
         if (currentUpload != null) return;
 
-        int promoted = db.promoteDiscoveredToPending();
+        if (!isResume) {
+            db.promoteDiscoveredToPending();
+        }
         int pending = db.countPending();
         if (pending == 0) {
             // Nothing to do — stay in Stopped and leave the scan output visible.
@@ -712,14 +731,21 @@ public class MainActivity extends Activity {
         render();
     }
 
-    private void onUploadDone(int uploaded, int failed, boolean stoppedByUser, String lastFailure) {
+    private void onUploadDone(int uploaded, int failed, boolean stoppedByUser, boolean paused, String lastFailure) {
         currentUpload = null;
-        currentState = STATE_STOPPED;
+        if (paused) {
+            currentState = STATE_PAUSED;
+        } else {
+            currentState = STATE_STOPPED;
+        }
         pendingCount = db.countPending();
         uploadedCount = db.countByStatus(UploadDatabase.STATUS_UPLOADED);
         failedCount = db.countByStatus(UploadDatabase.STATUS_FAILED);
         scanOutput.setLength(0);
-        if (stoppedByUser) {
+        if (paused) {
+            scanOutput.append(getString(R.string.upload_paused_fmt,
+                    pendingCount, uploaded, failed));
+        } else if (stoppedByUser) {
             scanOutput.append(getString(R.string.upload_stopped));
         } else {
             scanOutput.append(getString(R.string.upload_done_fmt, uploaded, failed));
@@ -779,7 +805,11 @@ public class MainActivity extends Activity {
             }
             MainActivity activity = activityRef.get();
             boolean stoppedByUser = activity != null && (activity.uploadStopped || activity.uploadPaused);
-            return new int[]{done, failed, stoppedByUser ? 1 : 0};
+            MainActivity act = activityRef.get();
+            boolean wasPaused = act != null && act.uploadPaused;
+            boolean wasStopped = act != null && act.uploadStopped;
+            // return: [done, failed, stoppedByUserFlag, pausedFlag]
+            return new int[]{done, failed, (wasStopped ? 1 : 0), (wasPaused ? 1 : 0)};
         }
 
         @Override
@@ -794,7 +824,10 @@ public class MainActivity extends Activity {
         protected void onPostExecute(int[] result) {
             MainActivity activity = activityRef.get();
             if (activity == null) return;
-            activity.onUploadDone(result[0], result[1], result[2] == 1, lastFailure);
+            activity.onUploadDone(result[0], result[1],
+                    result.length > 2 && result[2] == 1,
+                    result.length > 3 && result[3] == 1,
+                    lastFailure);
         }
     }
 

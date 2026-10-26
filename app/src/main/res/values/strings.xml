@@ -53,4 +53,6 @@
     <string name="upload_progress_fmt">Uploading %1$d / %2$d</string>
     <string name="upload_done_fmt">Upload complete: uploaded=%1$d, failed=%2$d</string>
     <string name="upload_stopped">Upload stopped.</string>
+    <string name="button_resume">Resume</string>
+    <string name="upload_paused_fmt">Paused: pending=%1$d, uploaded=%2$d, failed=%3$d</string>
 </resources>
