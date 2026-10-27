@@ -202,7 +202,10 @@ public class MainActivity extends Activity {
     private void onPauseClicked() {
         if (currentState == STATE_UPLOADING && !uploadPaused) {
             // Pause: takes effect at the next row boundary inside UploadTask.
+            // Clear the manual-run flag: the alarm is free to run the
+            // background service while the user has stepped away from the loop.
             uploadPaused = true;
+            SyncState.manualRunActive = false;
             currentState = STATE_PAUSED;
             render();
             return;
@@ -215,6 +218,7 @@ public class MainActivity extends Activity {
     private void onResumeClicked() {
         if (!uploadPaused) return;
         uploadPaused = false;
+        SyncState.manualRunActive = true;
         currentState = STATE_UPLOADING;
         render();
         startUploadLoop(true);
@@ -222,6 +226,7 @@ public class MainActivity extends Activity {
 
     private void onStopClicked() {
         uploadStopped = true;
+        SyncState.manualRunActive = false;
         SyncScheduler.disable(this);
         currentState = STATE_STOPPED;
         render();
@@ -673,6 +678,10 @@ public class MainActivity extends Activity {
         int pending = db.countPending();
         if (pending == 0) {
             // Nothing to do — stay in Stopped and leave the scan output visible.
+            // Clear the manual-run flag so the background service can run
+            // on the next alarm; otherwise every subsequent alarm is swallowed
+            // by the SyncService guard.
+            SyncState.manualRunActive = false;
             currentState = STATE_STOPPED;
             render();
             return;

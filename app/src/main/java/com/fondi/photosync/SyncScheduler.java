@@ -4,6 +4,7 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.SystemClock;
 
@@ -15,6 +16,8 @@ import android.os.SystemClock;
 public final class SyncScheduler {
 
     private static final int REQUEST_CODE = 0xF0D1;
+    private static final String PREFS_NAME = "fondi_prefs";
+    private static final String KEY_INTERVAL_MS = "interval_ms";
 
     private SyncScheduler() {}
 
@@ -36,7 +39,9 @@ public final class SyncScheduler {
     public static void enable(Context ctx) {
         AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
         if (am == null) return;
-        long interval = SyncConfig.SCAN_INTERVAL_MS;
+        SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        long interval = prefs.getLong(KEY_INTERVAL_MS, SyncConfig.SCAN_INTERVAL_MS);
+        if (interval < 15000L) interval = 15000L; // safety: never below 15s
         long first = SystemClock.elapsedRealtime() + interval;
         am.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, first, interval,
                 pendingIntent(ctx));
