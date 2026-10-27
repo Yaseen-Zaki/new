@@ -1,5 +1,8 @@
 package com.fondi.photosync;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,10 +32,19 @@ public final class PhotoScanner {
 
     private final UploadDatabase db;
     private final int maxNamesShown;
+    private final Context appContext;
 
     public PhotoScanner(UploadDatabase db, int maxNamesShown) {
         this.db = db;
         this.maxNamesShown = maxNamesShown;
+        this.appContext = null; // no context: last_scan_* prefs will not be written
+    }
+
+    /** Preferred constructor: enables writing last_scan_* prefs. */
+    public PhotoScanner(Context ctx, UploadDatabase db, int maxNamesShown) {
+        this.db = db;
+        this.maxNamesShown = maxNamesShown;
+        this.appContext = (ctx == null ? null : ctx.getApplicationContext());
     }
 
     /** Synchronous. Caller runs it on a background thread. */
@@ -83,6 +95,13 @@ public final class PhotoScanner {
         result.modified = modified;
         result.skippedUnreadable = skipped;
         result.shownNames = names;
+        if (appContext != null) {
+            SharedPreferences prefs = appContext.getSharedPreferences("fondi_prefs", 0);
+            prefs.edit()
+                    .putInt("last_scan_total", result.total)
+                    .putLong("last_scan_time", System.currentTimeMillis())
+                    .apply();
+        }
         return result;
     }
 }

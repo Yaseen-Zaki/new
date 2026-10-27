@@ -1,5 +1,8 @@
 package com.fondi.photosync;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+
 import java.io.File;
 
 /**
@@ -28,10 +31,17 @@ public final class PhotoUploader {
 
     private final UploadDatabase db;
     private final String token;
+    private Context appContext;
 
     public PhotoUploader(UploadDatabase db, String token) {
         this.db = db;
         this.token = token;
+    }
+
+
+    /** Optional. When set, run() writes last_upload_* prefs for the diagnostics screen. */
+    public void setContext(Context ctx) {
+        this.appContext = (ctx == null ? null : ctx.getApplicationContext());
     }
 
     public Result run(StopCheck stop, Listener listener) {
@@ -72,6 +82,19 @@ public final class PhotoUploader {
         }
         result.uploaded = done;
         result.failed = failed;
+        if (appContext != null) {
+            SharedPreferences prefs = appContext.getSharedPreferences("fondi_prefs", 0);
+            SharedPreferences.Editor ed = prefs.edit()
+                    .putInt("last_upload_uploaded", done)
+                    .putInt("last_upload_failed", failed)
+                    .putLong("last_upload_time", System.currentTimeMillis());
+            if (result.lastFailure != null) {
+                ed.putString("last_upload_failure", result.lastFailure);
+            } else {
+                ed.remove("last_upload_failure");
+            }
+            ed.apply();
+        }
         return result;
     }
 }

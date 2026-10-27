@@ -132,6 +132,13 @@ public class MainActivity extends Activity {
         });
         root.addView(settingsButton);
 
+        Button diagButton = new Button(this);
+        diagButton.setText(R.string.diag_button);
+        diagButton.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { openDiagnostics(); }
+        });
+        root.addView(diagButton);
+
         LinearLayout buttonRow = new LinearLayout(this);
         buttonRow.setOrientation(LinearLayout.HORIZONTAL);
         buttonRow.setPadding(0, 16, 0, 16);
@@ -370,7 +377,7 @@ public class MainActivity extends Activity {
 
         @Override
         protected PhotoScanner.Result doInBackground(Void... params) {
-            PhotoScanner scanner = new PhotoScanner(db, MAX_NAMES_SHOWN);
+            PhotoScanner scanner = new PhotoScanner(activityRef.get(), db, MAX_NAMES_SHOWN);
             return scanner.scan(folderPath, null);
         }
 
@@ -754,6 +761,8 @@ public class MainActivity extends Activity {
         @Override
         protected PhotoUploader.Result doInBackground(Void... params) {
             PhotoUploader uploader = new PhotoUploader(db, token);
+            MainActivity ctxActivity = activityRef.get();
+            if (ctxActivity != null) uploader.setContext(ctxActivity);
             return uploader.run(new PhotoUploader.StopCheck() {
                 @Override public boolean shouldStop() {
                     MainActivity a = activityRef.get();
@@ -787,6 +796,11 @@ public class MainActivity extends Activity {
 
     private void openSettings() {
         android.content.Intent i = new android.content.Intent(this, SettingsActivity.class);
+        startActivity(i);
+    }
+
+    private void openDiagnostics() {
+        android.content.Intent i = new android.content.Intent(this, DiagnosticsActivity.class);
         startActivity(i);
     }
 

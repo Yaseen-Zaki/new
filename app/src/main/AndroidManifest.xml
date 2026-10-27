@@ -31,6 +31,12 @@
             android:label="@string/settings_title"
             android:theme="@style/Theme.AppCompat.Light" />
 
+        <activity
+            android:name=".DiagnosticsActivity"
+            android:exported="false"
+            android:label="@string/diag_title"
+            android:theme="@android:style/Theme.Light" />
+
         <service
             android:name=".SyncService"
             android:exported="false" />

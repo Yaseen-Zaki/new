@@ -88,6 +88,7 @@ public class SyncService extends Service {
                     updateNotification(getString(R.string.sync_notif_uploading));
                     // 4. upload loop
                     PhotoUploader uploader = new PhotoUploader(db, token);
+                    uploader.setContext(SyncService.this);
                     PhotoUploader.Result r = uploader.run(
                             new PhotoUploader.StopCheck() {
                                 @Override public boolean shouldStop() {
