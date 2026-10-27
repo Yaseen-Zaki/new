@@ -33,3 +33,13 @@ android {
         }
     }
 }
+
+dependencies {
+    // Pinned to the last versions that support minSdk 19 (Android 4.4).
+    // AppCompat 1.7.0+ requires minSdk 21 and will not build on the Fondi
+    // tablet. Do not bump without checking the new minSdk requirement.
+    //noinspection GradleDependency
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    //noinspection GradleDependency
+    implementation 'androidx.preference:preference:1.2.1'
+}

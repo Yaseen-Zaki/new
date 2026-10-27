@@ -125,6 +125,13 @@ public class MainActivity extends Activity {
         });
         root.addView(sendOnePhotoButton);
 
+        Button settingsButton = new Button(this);
+        settingsButton.setText(R.string.settings_title);
+        settingsButton.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { openSettings(); }
+        });
+        root.addView(settingsButton);
+
         LinearLayout buttonRow = new LinearLayout(this);
         buttonRow.setOrientation(LinearLayout.HORIZONTAL);
         buttonRow.setPadding(0, 16, 0, 16);
@@ -776,6 +783,11 @@ public class MainActivity extends Activity {
             boolean stopped = activity.uploadStopped;
             activity.onUploadDone(r.uploaded, r.failed, stopped, paused, r.lastFailure);
         }
+    }
+
+    private void openSettings() {
+        android.content.Intent i = new android.content.Intent(this, SettingsActivity.class);
+        startActivity(i);
     }
 
 }
