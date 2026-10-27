@@ -55,4 +55,8 @@
     <string name="upload_stopped">Upload stopped.</string>
     <string name="button_resume">Resume</string>
     <string name="upload_paused_fmt">Paused: pending=%1$d, uploaded=%2$d, failed=%3$d</string>
+    <string name="sync_notif_title">Fondi Photo Sync</string>
+    <string name="sync_notif_scanning">Scanning for new photos…</string>
+    <string name="sync_notif_uploading">Uploading photos…</string>
+    <string name="sync_busy">Background sync in progress. Please wait.</string>
 </resources>

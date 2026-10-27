@@ -15,6 +15,16 @@ public class SyncAlarmReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         Log.d(TAG, "Alarm fired at " + System.currentTimeMillis());
-        // 6D.3: context.startService(new Intent(context, SyncService.class));
+        // 6D.3: start the foreground service to run one scan+upload pass.
+        // startService from a BroadcastReceiver is safe here because the
+        // service calls startForeground() as its first action, which gives
+        // it foreground priority and prevents the OS from killing it
+        // mid-upload.
+        try {
+            Intent svc = new Intent(context, SyncService.class);
+            context.startService(svc);
+        } catch (Exception e) {
+            Log.e(TAG, "failed to start SyncService", e);
+        }
     }
 }

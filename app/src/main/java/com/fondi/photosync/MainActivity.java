@@ -183,12 +183,18 @@ public class MainActivity extends Activity {
         if (currentScan != null) {
             return;
         }
+        if (SyncState.serviceRunning) {
+            lastError = getString(R.string.sync_busy);
+            render();
+            return;
+        }
         currentState = STATE_SCANNING;
         lastError = null;
         scanOutput.setLength(0);
         scanOutput.append(getString(R.string.scan_started));
         render();
         SyncScheduler.enable(this);
+        SyncState.manualRunActive = true;
         currentScan = new ScanTask(this, db, selectedFolder);
         currentScan.execute();
     }
@@ -370,6 +376,7 @@ public class MainActivity extends Activity {
         currentScan = null;
         currentState = STATE_STOPPED;
         if (result.error != null) {
+            SyncState.manualRunActive = false;
             lastError = getString(R.string.scan_failed, result.error);
             scanOutput.setLength(0);
         } else {
@@ -691,6 +698,7 @@ public class MainActivity extends Activity {
     }
 
     private void onUploadDone(int uploaded, int failed, boolean stoppedByUser, boolean paused, String lastFailure) {
+        SyncState.manualRunActive = false;
         currentUpload = null;
         if (paused) {
             currentState = STATE_PAUSED;
